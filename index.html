@@ -112,7 +112,7 @@ body {
 .item-info { flex: 1; min-width: 0; }
 .item-name { font-size: 14px; font-weight: 600; }
 .item-meta { font-size: 12px; color: var(--text3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.item-action { flex-shrink: 0; }
+.item-action { flex-shrink: 0; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
 
 /* ── PILLS ── */
 .pill {
@@ -550,6 +550,28 @@ function out(data) {
 </div>
 </div>
 
+<!-- ลบอุปกรณ์ (ต้องผ่าน PIN) -->
+<div class="overlay" id="mDelete" style="display:none" onclick="bgClose(event,'mDelete')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>🗑️</span><h3>ลบอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mDelete')">×</button></div>
+  <div class="sheet-body">
+    <div class="info-box" id="deleteInfo" style="margin-bottom:14px;"></div>
+    <div class="note" style="margin-bottom:14px;">เฉพาะเจ้าหน้าที่เท่านั้นที่ลบอุปกรณ์ได้</div>
+    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
+    <div class="staff-pick" id="deleteStaff" style="margin-bottom:14px;"></div>
+    <div class="fg">
+      <label>PIN</label>
+      <input type="password" id="deletePin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;" />
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-danger btn-full" onclick="confirmDelete()">🗑️ ยืนยันลบ</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mDelete')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
 <!-- ยืม -->
 <div class="overlay" id="mBorrow" style="display:none" onclick="bgClose(event,'mBorrow')">
 <div class="sheet">
@@ -709,7 +731,8 @@ function renderItems(){
       meta=`${it.borrower} · ${timeLeft(it.borrowTo).replace(/<[^>]*>/g,'')}`;
     } else {
       pill='<span class="pill pg">✅ ว่าง</span>';
-      btn=`<button class="btn btn-ghost btn-sm" onclick="openBorrow('${it.id}')">ยืม</button>`;
+      btn=`<button class="btn btn-ghost btn-sm" onclick="openBorrow('${it.id}')">ยืม</button>
+           <button class="btn btn-danger btn-sm" style="margin-top:5px" onclick="openDelete('${it.id}')">🗑️ ลบ</button>`;
       meta='พร้อมใช้งาน';
     }
     return `<div class="item-card ${over?'overdue':''} ${it.pendingReturn?'pending':''}">
@@ -747,7 +770,8 @@ function renderLog(){
   const el=document.getElementById('logList');
   if(!logs.length){el.innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';return;}
   const col={borrow:getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()||'#7a5a1a',
-             return_req:'#8b2020', return_ok:getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||'#1f6b45'};
+             return_req:'#8b2020', return_ok:getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||'#1f6b45',
+             delete:'#555555'};
   el.innerHTML=[...logs].reverse().map(l=>`
     <div class="log-row">
       <div class="log-dot" style="background:${col[l.type]||'#aaa'}"></div>
@@ -996,6 +1020,37 @@ function onScan(text){
 function copyCode(){
   navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent)
     .then(()=>alert('คัดลอกโค้ดแล้ว!'));
+}
+
+// ── DELETE ITEM ────────────────────────────────────────────────────────────
+let pDelete=null, delSelStaff=null;
+function openDelete(id){
+  pDelete=id; delSelStaff=null;
+  const it=items.find(x=>x.id===id);
+  document.getElementById('deleteInfo').innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ต้องการลบอุปกรณ์นี้ออกจากระบบ?`;
+  document.getElementById('deletePin').value='';
+  document.getElementById('deleteStaff').innerHTML=staff.map(s=>`
+    <div class="sopt" id="ds-${s.id}" onclick="selDelStaff('${s.id}')">
+      <div class="avatar">${s.name.slice(0,2)}</div>
+      <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
+    </div>`).join('');
+  document.getElementById('mDelete').style.display='flex';
+}
+function selDelStaff(id){
+  delSelStaff=id;
+  document.querySelectorAll('#deleteStaff .sopt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('ds-'+id)?.classList.add('sel');
+}
+function confirmDelete(){
+  if(!delSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+  const pin=document.getElementById('deletePin').value;
+  const s=staff.find(x=>x.id===delSelStaff);
+  if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
+  const it=items.find(x=>x.id===pDelete);
+  logs.push({ts:nowStr(),type:'delete',detail:`${s.name} ลบอุปกรณ์ ${it.name}`,staff:s.name});
+  items=items.filter(x=>x.id!==pDelete);
+  save(); render(); closeM('mDelete');
+  push({action:'deleteItem',id:pDelete});
 }
 
 // ── MODAL ──────────────────────────────────────────────────────────────────
