@@ -505,6 +505,24 @@ function out(data) {
 
 <!-- ═══ MODALS (bottom sheets) ═══ -->
 
+<!-- PIN ก่อนเพิ่มอุปกรณ์ -->
+<div class="overlay" id="mPinAdd" style="display:none" onclick="bgClose(event,'mPinAdd')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>🔒</span><h3>ยืนยันตัวตนเจ้าหน้าที่</h3><button class="sheet-close" onclick="closeM('mPinAdd')">×</button></div>
+  <div class="sheet-body">
+    <div class="note" style="margin-bottom:14px;">เฉพาะเจ้าหน้าที่เท่านั้นที่เพิ่มอุปกรณ์ได้</div>
+    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
+    <div class="staff-pick" id="pinAddStaff" style="margin-bottom:14px;"></div>
+    <div class="fg"><label>PIN</label><input type="password" id="pinAddInput" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;" /></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-primary btn-full" onclick="verifyPinAdd()">✅ ยืนยัน</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mPinAdd')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
 <!-- เพิ่มอุปกรณ์ -->
 <div class="overlay" id="mAdd" style="display:none" onclick="bgClose(event,'mAdd')">
 <div class="sheet">
@@ -858,8 +876,32 @@ function confirmStaff(){
   push({action:'confirmReturn',id:it.id,name:it.name,borrower,staffId:s.id});
 }
 
-// ── ADD ITEM ───────────────────────────────────────────────────────────────
-function openAdd(){ document.getElementById('niName').value=''; document.getElementById('mAdd').style.display='flex'; }
+// ── ADD ITEM (ต้องผ่าน PIN ก่อน) ──────────────────────────────────────────
+let pinAddSelStaff = null;
+function openAdd(){
+  pinAddSelStaff = null;
+  document.getElementById('pinAddInput').value='';
+  document.getElementById('pinAddStaff').innerHTML = staff.map(s=>`
+    <div class="sopt" id="pas-${s.id}" onclick="selPinAddStaff('${s.id}')">
+      <div class="avatar">${s.name.slice(0,2)}</div>
+      <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
+    </div>`).join('');
+  document.getElementById('mPinAdd').style.display='flex';
+}
+function selPinAddStaff(id){
+  pinAddSelStaff=id;
+  document.querySelectorAll('#pinAddStaff .sopt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('pas-'+id)?.classList.add('sel');
+}
+function verifyPinAdd(){
+  if(!pinAddSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+  const pin=document.getElementById('pinAddInput').value;
+  const s=staff.find(x=>x.id===pinAddSelStaff);
+  if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
+  closeM('mPinAdd');
+  document.getElementById('niName').value='';
+  document.getElementById('mAdd').style.display='flex';
+}
 function confirmAdd(){
   const name=document.getElementById('niName').value.trim();
   if(!name){alert('กรุณาใส่ชื่ออุปกรณ์');return;}
