@@ -8,282 +8,144 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
-:root {
-  --bg: #f7f6f3;
-  --white: #ffffff;
-  --border: #e2dfd8;
-  --border2: #ccc9c0;
-  --text: #1c1b18;
-  --text2: #6b6860;
-  --text3: #aaa8a2;
-  --green: #1f6b45;
-  --green-bg: #edf7f1;
-  --amber: #7a5a1a;
-  --amber-bg: #fdf6e3;
-  --red: #8b2020;
-  --red-bg: #fdf0f0;
-  --blue: #1a3f70;
-  --blue-bg: #eef3fb;
-  --r: 8px;
-  --mono: 'IBM Plex Mono', monospace;
+:root{
+  --bg:#f7f6f3;--white:#fff;--border:#e2dfd8;--border2:#ccc9c0;
+  --text:#1c1b18;--text2:#6b6860;--text3:#aaa8a2;
+  --green:#1f6b45;--green-bg:#edf7f1;
+  --amber:#7a5a1a;--amber-bg:#fdf6e3;
+  --red:#8b2020;--red-bg:#fdf0f0;
+  --blue:#1a3f70;--blue-bg:#eef3fb;
+  --r:8px;--mono:'IBM Plex Mono',monospace;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Sarabun', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.5;
-}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;}
 
-/* ── HEADER ── */
-.topbar {
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-  padding: 0 20px; height: 52px;
-  position: sticky; top: 0; z-index: 100;
-}
-.topbar-logo { font-size: 20px; }
-.topbar-name { font-size: 15px; font-weight: 700; }
-.topbar-sync { font-size: 11px; color: var(--text3); font-family: var(--mono); }
-.topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); }
-.sync-dot.on { background: var(--green); }
+.topbar{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;position:sticky;top:0;z-index:100;}
+.topbar-name{font-size:15px;font-weight:700;}
+.topbar-sync{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);}
+.sync-dot.on{background:var(--green);}
 
-/* ── BOTTOM NAV (mobile) ── */
-.bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--white); border-top: 1px solid var(--border);
-  display: flex; z-index: 100;
-}
-.bnav {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 8px 4px 10px; cursor: pointer; font-size: 11px;
-  color: var(--text3); gap: 3px; border: none; background: none;
-  font-family: 'Sarabun', sans-serif;
-}
-.bnav.active { color: var(--green); }
-.bnav-ic { font-size: 20px; }
-.bnav-badge {
-  position: absolute; top: 4px; right: calc(50% - 18px);
-  background: var(--red); color: #fff;
-  border-radius: 99px; font-size: 9px; font-weight: 700;
-  padding: 0 4px; min-width: 14px; text-align: center;
-  font-family: var(--mono); display: none;
-}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100;}
+.bnav{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 10px;cursor:pointer;font-size:11px;color:var(--text3);gap:3px;border:none;background:none;font-family:'Sarabun',sans-serif;position:relative;}
+.bnav.active{color:var(--green);}
+.bnav-ic{font-size:20px;}
+.bnav-badge{position:absolute;top:4px;right:calc(50% - 18px);background:var(--red);color:#fff;border-radius:99px;font-size:9px;font-weight:700;padding:0 4px;min-width:14px;text-align:center;font-family:var(--mono);display:none;}
 
-/* ── PAGES ── */
-.pages { padding-bottom: 70px; }
-.page { display: none; }
-.page.active { display: block; }
+.pages{padding-bottom:72px;}
+.page{display:none;}.page.active{display:block;}
 
-/* ── STATS ── */
-.stats {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; padding: 14px 14px 0;
-}
-.stat {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 12px 10px; text-align: center;
-}
-.stat-n { font-size: 24px; font-weight: 700; font-family: var(--mono); }
-.stat-l { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.stat.g .stat-n { color: var(--green); }
-.stat.a .stat-n { color: var(--amber); }
-.stat.r .stat-n { color: var(--red); }
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 14px 0;}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center;}
+.stat-n{font-size:22px;font-weight:700;font-family:var(--mono);}
+.stat-l{font-size:11px;color:var(--text3);margin-top:1px;}
+.stat.g .stat-n{color:var(--green);}.stat.a .stat-n{color:var(--amber);}.stat.r .stat-n{color:var(--red);}
 
-/* ── SECTION ── */
-.sec { padding: 14px 14px 0; }
-.sec-head { display: flex; align-items: center; margin-bottom: 10px; }
-.sec-title { font-size: 14px; font-weight: 700; }
-.sec-right { margin-left: auto; }
+.sec{padding:14px 14px 0;}
+.sec-head{display:flex;align-items:center;margin-bottom:10px;}
+.sec-title{font-size:14px;font-weight:700;}
+.sec-right{margin-left:auto;}
 
-/* ── ITEM CARDS ── */
-.item-list { display: flex; flex-direction: column; gap: 8px; }
-.item-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 13px 14px;
-  display: flex; align-items: center; gap: 12px;
-}
-.item-card.overdue { border-color: #e8b4b4; background: #fffafa; }
-.item-card.pending { border-color: #bbd6c7; background: #f7fdfb; }
-.item-icon { font-size: 26px; flex-shrink: 0; width: 36px; text-align: center; }
-.item-info { flex: 1; min-width: 0; }
-.item-name { font-size: 14px; font-weight: 600; }
-.item-meta { font-size: 12px; color: var(--text3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.item-action { flex-shrink: 0; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.item-list{display:flex;flex-direction:column;gap:8px;}
+.item-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;display:flex;align-items:center;gap:12px;}
+.item-card.overdue{border-color:#e8b4b4;background:#fffafa;}
+.item-card.pending{border-color:#bbd6c7;background:#f7fdfb;}
+.item-icon{font-size:24px;flex-shrink:0;width:32px;text-align:center;}
+.item-info{flex:1;min-width:0;}
+.item-name{font-size:14px;font-weight:600;}
+.item-meta{font-size:12px;color:var(--text3);margin-top:2px;}
+.item-action{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
 
-/* ── PILLS ── */
-.pill {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600;
-}
-.pg { background: var(--green-bg); color: var(--green); }
-.pa { background: var(--amber-bg); color: var(--amber); }
-.pr { background: var(--red-bg); color: var(--red); }
-.pb { background: var(--blue-bg); color: var(--blue); }
-.blink { animation: bk 1.2s infinite; }
-@keyframes bk { 0%,100%{opacity:1}50%{opacity:.3} }
+/* MULTI-BORROW: checkbox cards */
+.cb-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:.12s;}
+.cb-item.checked{border-color:var(--green);background:var(--green-bg);}
+.cb-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
+.cb-icon{font-size:20px;}
+.cb-name{font-size:14px;font-weight:600;flex:1;}
+.cb-status{font-size:11px;color:var(--text3);}
 
-/* ── BUTTONS ── */
-.btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 7px 14px; border-radius: var(--r);
-  font-size: 13px; font-family: 'Sarabun', sans-serif; font-weight: 600;
-  cursor: pointer; border: 1px solid transparent; transition: .12s;
-}
-.btn-primary { background: var(--green); color: #fff; }
-.btn-primary:hover, .btn-primary:active { background: #175236; }
-.btn-ghost { background: transparent; border-color: var(--border2); color: var(--text2); }
-.btn-ghost:hover { background: var(--bg); }
-.btn-amber { background: var(--amber-bg); border-color: #d4b87a; color: var(--amber); }
-.btn-red-outline { background: transparent; border-color: #e8b4b4; color: var(--red); }
-.btn-confirm { background: var(--green-bg); border-color: #a0c8b4; color: var(--green); }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-full { width: 100%; justify-content: center; padding: 11px; font-size: 15px; }
+.pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;}
+.pg{background:var(--green-bg);color:var(--green);}
+.pa{background:var(--amber-bg);color:var(--amber);}
+.pr{background:var(--red-bg);color:var(--red);}
+.pb{background:var(--blue-bg);color:var(--blue);}
+.blink{animation:bk 1.2s infinite;}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ── MODAL ── */
-.overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.4);
-  z-index: 200; display: flex; align-items: flex-end;
-  padding: 0;
-}
-.sheet {
-  background: var(--white);
-  border-radius: 16px 16px 0 0;
-  width: 100%; max-height: 92vh; overflow-y: auto;
-  padding: 0 0 24px;
-  animation: slideUp .22s ease;
-}
-@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-.sheet-handle {
-  display: flex; justify-content: center; padding: 12px 0 4px;
-}
-.handle-bar { width: 40px; height: 4px; border-radius: 99px; background: var(--border2); }
-.sheet-head { padding: 4px 20px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
-.sheet-head h3 { font-size: 16px; font-weight: 700; }
-.sheet-close { margin-left: auto; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text3); }
-.sheet-body { padding: 16px 20px; }
-.sheet-foot { padding: 12px 20px 0; display: flex; flex-direction: column; gap: 8px; }
+.btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:var(--r);font-size:13px;font-family:'Sarabun',sans-serif;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.12s;}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:#175236;}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--text2);}
+.btn-ghost:hover{background:var(--bg);}
+.btn-amber{background:var(--amber-bg);border-color:#d4b87a;color:var(--amber);}
+.btn-danger{background:var(--red-bg);border-color:#e8b4b4;color:var(--red);}
+.btn-confirm{background:var(--green-bg);border-color:#a0c8b4;color:var(--green);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-full{width:100%;justify-content:center;padding:11px;font-size:15px;}
 
-/* ── FORM ── */
-.fg { margin-bottom: 14px; }
-label { display: block; font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 5px; }
-input, select {
-  width: 100%; padding: 10px 12px; border: 1px solid var(--border2);
-  border-radius: var(--r); font-size: 15px; font-family: 'Sarabun', sans-serif;
-  background: var(--white); color: var(--text);
-}
-input:focus, select:focus { outline: none; border-color: var(--green); }
-.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.fhint { font-size: 11px; color: var(--text3); margin-top: 4px; }
-.info-box {
-  background: var(--bg); border-radius: var(--r); border: 1px solid var(--border);
-  padding: 10px 13px; font-size: 13px; line-height: 1.7; margin-bottom: 14px;
-}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:flex-end;}
+.sheet{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:0 0 24px;animation:su .22s ease;}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{display:flex;justify-content:center;padding:12px 0 4px;}
+.handle-bar{width:40px;height:4px;border-radius:99px;background:var(--border2);}
+.sheet-head{padding:4px 20px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
+.sheet-head h3{font-size:16px;font-weight:700;}
+.sheet-close{margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);}
+.sheet-body{padding:16px 20px;}
+.sheet-foot{padding:12px 20px 0;display:flex;flex-direction:column;gap:8px;}
 
-/* ── STAFF PICK ── */
-.staff-pick { display: flex; flex-direction: column; gap: 8px; }
-.sopt {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 13px; border: 1px solid var(--border);
-  border-radius: var(--r); cursor: pointer;
-}
-.sopt.sel { border-color: var(--green); background: var(--green-bg); }
-.avatar {
-  width: 34px; height: 34px; border-radius: 50%; background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: var(--text2); flex-shrink: 0;
-}
-.sopt-name { font-size: 13px; font-weight: 600; }
-.sopt-role { font-size: 11px; color: var(--text3); }
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px;}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);font-size:15px;font-family:'Sarabun',sans-serif;background:var(--white);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--green);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fhint{font-size:11px;color:var(--text3);margin-top:4px;}
+.info-box{background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 13px;font-size:13px;line-height:1.7;margin-bottom:14px;}
 
-/* ── QR PAGE ── */
-.qr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
-.qr-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px; text-align: center;
-}
-.qr-card h4 { font-size: 13px; font-weight: 700; margin-top: 8px; }
-.qr-card p { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+.staff-pick{display:flex;flex-direction:column;gap:8px;}
+.sopt{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;}
+.sopt.sel{border-color:var(--green);background:var(--green-bg);}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0;}
+.sopt-name{font-size:13px;font-weight:600;}
+.sopt-role{font-size:11px;color:var(--text3);}
 
-/* ── SCAN ── */
-.scan-wrap { padding: 14px; }
-#reader { border-radius: var(--r); overflow: hidden; }
-.scan-result {
-  background: var(--green-bg); border: 1px solid #a0c8b4;
-  border-radius: var(--r); padding: 12px 14px; margin-top: 12px; font-size: 14px; color: var(--green);
-}
+.qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;}
+.qr-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.qr-card h4{font-size:12px;font-weight:700;margin-top:8px;}
+.qr-card p{font-size:10px;color:var(--text3);font-family:var(--mono);}
 
-/* ── LOG ── */
-.log-list { padding: 14px; display: flex; flex-direction: column; gap: 0; }
-.log-row {
-  display: flex; gap: 10px; padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-}
-.log-row:last-child { border-bottom: none; }
-.log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-.log-text { font-size: 13px; }
-.log-time { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+.scan-wrap{padding:14px;}
+#reader{border-radius:var(--r);overflow:hidden;}
+.scan-result{background:var(--green-bg);border:1px solid #a0c8b4;border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:14px;color:var(--green);}
 
-/* ── SETUP ── */
-.setup-wrap { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-.setup-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px 16px;
-}
-.step-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-.step-num {
-  width: 22px; height: 22px; border-radius: 50%; background: var(--text);
-  color: #fff; font-size: 11px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.setup-desc { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 8px; }
-.tip {
-  background: var(--amber-bg); border-left: 3px solid var(--amber);
-  padding: 7px 10px; border-radius: 0 6px 6px 0; font-size: 12px; color: var(--amber); margin: 6px 0;
-}
-.note {
-  background: var(--blue-bg); border-left: 3px solid #4a7ab5;
-  padding: 7px 10px; border-radius: 0 6px 6px 0; font-size: 12px; color: var(--blue); margin: 6px 0;
-}
-.code-block {
-  background: #f0ede8; border: 1px solid var(--border); border-radius: 6px;
-  padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.6;
-  white-space: pre-wrap; word-break: break-all;
-  max-height: 220px; overflow-y: auto; margin: 6px 0;
-}
-.copy-btn {
-  float: right; font-size: 11px; padding: 3px 8px;
-  border-radius: 4px; border: 1px solid var(--border2);
-  background: var(--white); cursor: pointer; font-family: 'Sarabun', sans-serif;
-  color: var(--text2);
-}
+.log-list{padding:14px;display:flex;flex-direction:column;}
+.log-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.log-row:last-child{border-bottom:none;}
+.log-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.log-text{font-size:13px;}
+.log-time{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
 
-/* ── STAFF CONFIG ── */
-.staff-list-cfg { display: flex; flex-direction: column; }
-.staff-cfg-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 0; border-bottom: 1px solid var(--border);
-}
-.staff-cfg-row:last-child { border-bottom: none; }
-
-/* ── EMPTY ── */
-.empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 14px; }
-.empty-ic { font-size: 36px; margin-bottom: 8px; }
-
-@media print {
-  .topbar, .bottom-nav, .sec-head, .stats { display: none !important; }
-  .qr-grid { grid-template-columns: repeat(3,1fr); }
-}
+.setup-wrap{padding:14px;display:flex;flex-direction:column;gap:10px;}
+.setup-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;}
+.step-head{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin-bottom:10px;}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--text);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.setup-desc{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:8px;}
+.tip{background:var(--amber-bg);border-left:3px solid var(--amber);padding:7px 10px;border-radius:0 6px 6px 0;font-size:12px;color:var(--amber);margin:6px 0;}
+.note{background:var(--blue-bg);border-left:3px solid #4a7ab5;padding:7px 10px;border-radius:0 6px 6px 0;font-size:12px;color:var(--blue);margin:6px 0;}
+.code-block{background:#f0ede8;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;max-height:220px;overflow-y:auto;margin:6px 0;}
+.copy-btn{float:right;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border2);background:var(--white);cursor:pointer;font-family:'Sarabun',sans-serif;color:var(--text2);}
+.staff-cfg-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.staff-cfg-row:last-child{border-bottom:none;}
+.empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px;}
+.empty-ic{font-size:36px;margin-bottom:8px;}
+@media print{.topbar,.bottom-nav,.sec-head,.stats{display:none!important;}.qr-grid{grid-template-columns:repeat(3,1fr);}}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="topbar">
-  <span class="topbar-logo">📦</span>
+  <span style="font-size:20px;">📦</span>
   <div>
     <div class="topbar-name">ยืม-คืนอุปกรณ์</div>
     <div class="topbar-sync" id="syncLabel">ข้อมูลในเครื่อง</div>
@@ -294,24 +156,24 @@ input:focus, select:focus { outline: none; border-color: var(--green); }
   </div>
 </div>
 
-<!-- PAGES -->
 <div class="pages">
 
-  <!-- PAGE: อุปกรณ์ -->
+  <!-- อุปกรณ์ -->
   <div class="page active" id="p-items">
     <div class="stats" id="statsGrid"></div>
     <div class="sec" style="margin-top:14px;">
       <div class="sec-head">
         <span class="sec-title">อุปกรณ์ทั้งหมด</span>
-        <div class="sec-right">
-          <button class="btn btn-primary btn-sm" onclick="openAdd()">+ เพิ่ม</button>
+        <div class="sec-right" style="display:flex;gap:6px;">
+          <button class="btn btn-primary btn-sm" onclick="openMultiBorrow()">📤 ยืมหลายรายการ</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAdd()">+ เพิ่ม</button>
         </div>
       </div>
       <div class="item-list" id="itemList"></div>
     </div>
   </div>
 
-  <!-- PAGE: รอยืนยัน -->
+  <!-- รออนุมัติ -->
   <div class="page" id="p-pending">
     <div class="sec" style="padding-top:14px;">
       <div class="note" style="margin-bottom:12px;">🛡️ เจ้าหน้าที่ยืนยัน PIN เพื่อปิดรายการคืน</div>
@@ -319,7 +181,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); }
     </div>
   </div>
 
-  <!-- PAGE: สแกน QR -->
+  <!-- สแกน -->
   <div class="page" id="p-scan">
     <div class="scan-wrap">
       <div id="reader"></div>
@@ -332,131 +194,53 @@ input:focus, select:focus { outline: none; border-color: var(--green); }
     </div>
   </div>
 
-  <!-- PAGE: QR Code -->
+  <!-- QR Code -->
   <div class="page" id="p-qr">
     <div style="padding:14px 14px 0;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-size:14px;font-weight:700;">QR Code ป้ายอุปกรณ์</span>
       <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ พิมพ์</button>
     </div>
-    <div class="tip" style="margin:10px 14px 0;">💡 ตัดติดป้ายที่อุปกรณ์แต่ละชิ้น พนักงานสแกนจากหน้า "สแกน" ได้เลย</div>
+    <div class="tip" style="margin:10px 14px 0;">💡 ตัดติดป้ายที่อุปกรณ์แต่ละชิ้น</div>
     <div class="qr-grid" id="qrGrid"></div>
   </div>
 
-  <!-- PAGE: ประวัติ -->
+  <!-- ประวัติ -->
   <div class="page" id="p-log">
     <div class="log-list" id="logList"></div>
   </div>
 
-  <!-- PAGE: ตั้งค่า -->
+  <!-- ตั้งค่า -->
   <div class="page" id="p-setup">
     <div class="setup-wrap">
-
-      <!-- step 1 -->
       <div class="setup-card">
         <div class="step-head"><span class="step-num">1</span>สร้าง Google Spreadsheet</div>
         <div class="setup-desc">ไปที่ <a href="https://sheets.google.com" target="_blank" style="color:var(--green)">sheets.google.com</a> → สร้างใหม่ → ตั้งชื่อ <strong>BorrowTracker</strong></div>
-        <div class="tip">📋 Sheet ชื่อ <strong>Items</strong> คอลัมน์:<br>id · name · icon · borrower · borrowFrom · borrowTo · pendingReturn · pendingStaff</div>
-        <div class="tip">📋 Sheet ชื่อ <strong>Logs</strong> คอลัมน์:<br>timestamp · type · detail · staff</div>
+        <div class="tip">📋 Sheet <strong>Items</strong>: id · name · icon · borrower · borrowFrom · borrowTo · pendingReturn · pendingStaff</div>
+        <div class="tip">📋 Sheet <strong>Logs</strong>: timestamp · type · detail · staff</div>
       </div>
-
-      <!-- step 2 -->
       <div class="setup-card">
         <div class="step-head"><span class="step-num">2</span>ติดตั้ง Apps Script</div>
-        <div class="setup-desc">เปิด Spreadsheet → <strong>Extensions → Apps Script</strong> → วางโค้ดด้านล่าง → Save</div>
+        <div class="setup-desc">Extensions → Apps Script → วางโค้ด → Save</div>
         <button class="copy-btn" onclick="copyCode()">📋 คัดลอก</button>
         <div class="code-block" id="appsScriptCode">const SHEET_ID = 'YOUR_SPREADSHEET_ID';
-// วิธีหา ID: เอาตัวเลข/ตัวอักษร ระหว่าง /d/ และ /edit ใน URL
-
-function doGet(e) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const a = e.parameter.action;
-  if (a === 'getItems') return out(getItems(ss));
-  if (a === 'getLogs')  return out(getLogs(ss));
-  return out({error:'unknown'});
-}
-
-function doPost(e) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const d = JSON.parse(e.postData.contents);
-  if (d.action === 'borrow')        return out(doBorrow(ss, d));
-  if (d.action === 'requestReturn') return out(doRequest(ss, d));
-  if (d.action === 'confirmReturn') return out(doConfirm(ss, d));
-  if (d.action === 'addItem')       return out(doAdd(ss, d));
-  return out({error:'unknown'});
-}
-
-function getItems(ss) {
-  const rows = ss.getSheetByName('Items').getDataRange().getValues();
-  return rows.slice(1).map(r => ({
-    id: r[0]+'', name: r[1]+'', icon: r[2]+'',
-    borrower: r[3]+'', borrowFrom: r[4]+'', borrowTo: r[5]+'',
-    pendingReturn: r[6]==='TRUE' || r[6]===true,
-    pendingStaff: r[7]+''
-  }));
-}
-
-function getLogs(ss) {
-  const rows = ss.getSheetByName('Logs').getDataRange().getValues();
-  return rows.slice(1).reverse().slice(0,100).map(r => ({
-    ts: r[0]+'', type: r[1]+'', detail: r[2]+'', staff: r[3]+''
-  }));
-}
-
-function doBorrow(ss, d) {
-  setRow(ss, d.id, [d.borrower, d.borrowFrom, d.borrowTo, 'FALSE', ''], 4);
-  log(ss, 'borrow', d.borrower+' ยืม '+d.name+' ถึง '+d.borrowTo, '');
-  return {ok:true};
-}
-
-function doRequest(ss, d) {
-  setRow(ss, d.id, ['TRUE', d.staffId], 7);
-  log(ss, 'return_req', d.borrower+' แจ้งคืน '+d.name, d.staffId);
-  return {ok:true};
-}
-
-function doConfirm(ss, d) {
-  setRow(ss, d.id, ['','','','FALSE',''], 4);
-  log(ss, 'return_ok', d.borrower+' คืน '+d.name, d.staffId);
-  return {ok:true};
-}
-
-function doAdd(ss, d) {
-  const id = 'item_'+Date.now();
-  ss.getSheetByName('Items').appendRow([id,d.name,d.icon,'','','','FALSE','']);
-  return {ok:true, id};
-}
-
-function setRow(ss, id, vals, startCol) {
-  const sh = ss.getSheetByName('Items');
-  const rows = sh.getDataRange().getValues();
-  for (let i=1;i<rows.length;i++) {
-    if (rows[i][0] == id) {
-      sh.getRange(i+1, startCol, 1, vals.length).setValues([vals]);
-      return;
-    }
-  }
-}
-
-function log(ss, type, detail, staff) {
-  const t = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm');
-  ss.getSheetByName('Logs').appendRow([t, type, detail, staff]);
-}
-
-function out(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}</div>
+function doGet(e){var ss=SpreadsheetApp.openById(SHEET_ID);var a=e.parameter.action;if(a==='getItems')return out(getItems(ss));if(a==='getLogs')return out(getLogs(ss));return out({error:'unknown'});}
+function doPost(e){var ss=SpreadsheetApp.openById(SHEET_ID);var d=JSON.parse(e.postData.contents);if(d.action==='borrow')return out(doBorrow(ss,d));if(d.action==='requestReturn')return out(doRequest(ss,d));if(d.action==='confirmReturn')return out(doConfirm(ss,d));if(d.action==='addItem')return out(doAdd(ss,d));if(d.action==='deleteItem')return out(doDelete(ss,d));return out({error:'unknown'});}
+function getItems(ss){var rows=ss.getSheetByName('Items').getDataRange().getValues();var r=[];for(var i=1;i<rows.length;i++){r.push({id:rows[i][0]+'',name:rows[i][1]+'',icon:rows[i][2]+'',borrower:rows[i][3]+'',borrowFrom:rows[i][4]+'',borrowTo:rows[i][5]+'',pendingReturn:rows[i][6]==='TRUE'||rows[i][6]===true,pendingStaff:rows[i][7]+''});}return r;}
+function getLogs(ss){var rows=ss.getSheetByName('Logs').getDataRange().getValues();var r=[];for(var i=rows.length-1;i>=1;i--){r.push({ts:rows[i][0]+'',type:rows[i][1]+'',detail:rows[i][2]+'',staff:rows[i][3]+''});if(r.length>=100)break;}return r;}
+function doBorrow(ss,d){setRow(ss,d.id,[d.borrower,d.borrowFrom,d.borrowTo,'FALSE',''],4);addLog(ss,'borrow',d.borrower+' ยืม '+d.name+' ถึง '+d.borrowTo,'');return{ok:true};}
+function doRequest(ss,d){setRow(ss,d.id,['TRUE',d.staffId],7);addLog(ss,'return_req',d.borrower+' แจ้งคืน '+d.name,d.staffId);return{ok:true};}
+function doConfirm(ss,d){setRow(ss,d.id,['','','','FALSE',''],4);addLog(ss,'return_ok',d.borrower+' คืน '+d.name,d.staffId);return{ok:true};}
+function doAdd(ss,d){var id='item_'+Date.now();ss.getSheetByName('Items').appendRow([id,d.name,d.icon,'','','','FALSE','']);return{ok:true,id:id};}
+function doDelete(ss,d){var sh=ss.getSheetByName('Items');var rows=sh.getDataRange().getValues();for(var i=1;i<rows.length;i++){if(rows[i][0]==d.id){sh.deleteRow(i+1);return{ok:true};}}return{ok:false};}
+function setRow(ss,id,vals,startCol){var sh=ss.getSheetByName('Items');var rows=sh.getDataRange().getValues();for(var i=1;i<rows.length;i++){if(rows[i][0]==id){sh.getRange(i+1,startCol,1,vals.length).setValues([vals]);return;}}}
+function addLog(ss,type,detail,staff){var t=Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm');ss.getSheetByName('Logs').appendRow([t,type,detail,staff]);}
+function out(data){return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);}</div>
       </div>
-
-      <!-- step 3 -->
       <div class="setup-card">
         <div class="step-head"><span class="step-num">3</span>Deploy เป็น Web App</div>
-        <div class="setup-desc">ใน Apps Script → <strong>Deploy → New deployment</strong></div>
-        <div class="tip">⚙️ Type = Web App · Execute as = <strong>Me</strong> · Access = <strong>Anyone</strong></div>
-        <div class="note">📌 คัดลอก URL ที่ได้ (https://script.google.com/macros/s/...) มาวางในขั้น 4</div>
+        <div class="tip">⚙️ Type=Web App · Execute as=Me · Access=Anyone</div>
+        <div class="note">📌 คัดลอก URL มาวางในขั้น 4</div>
       </div>
-
-      <!-- step 4: connect -->
       <div class="setup-card">
         <div class="step-head"><span class="step-num">4</span>เชื่อมต่อ</div>
         <div class="fg">
@@ -467,54 +251,62 @@ function out(data) {
         <button class="btn btn-primary btn-full" onclick="saveConfig()">💾 บันทึกและทดสอบ</button>
         <div id="cfgStatus" style="font-size:12px;color:var(--text3);margin-top:8px;text-align:center;"></div>
       </div>
-
-      <!-- staff -->
       <div class="setup-card">
         <div class="step-head"><span class="step-num">5</span>ทีมเจ้าหน้าที่</div>
-        <div id="staffCfg" class="staff-list-cfg"></div>
+        <div id="staffCfg" class="staff-cfg-row" style="flex-direction:column;gap:0;padding:0;border:none;"></div>
         <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="openAddStaff()">+ เพิ่มเจ้าหน้าที่</button>
       </div>
-
     </div>
   </div>
+</div>
 
-</div><!-- end pages -->
-
-<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
-  <button class="bnav active" id="bn-items" onclick="go('items')">
-    <span class="bnav-ic">📦</span>อุปกรณ์
-  </button>
-  <button class="bnav" id="bn-pending" onclick="go('pending')" style="position:relative;">
-    <span class="bnav-ic">🛡️</span>รออนุมัติ
-    <span class="bnav-badge" id="bnbadge"></span>
-  </button>
-  <button class="bnav" id="bn-scan" onclick="go('scan')">
-    <span class="bnav-ic">📷</span>สแกน
-  </button>
-  <button class="bnav" id="bn-qr" onclick="go('qr')">
-    <span class="bnav-ic">🖨️</span>QR Code
-  </button>
-  <button class="bnav" id="bn-log" onclick="go('log')">
-    <span class="bnav-ic">📋</span>ประวัติ
-  </button>
-  <button class="bnav" id="bn-setup" onclick="go('setup')">
-    <span class="bnav-ic">⚙️</span>ตั้งค่า
-  </button>
+  <button class="bnav active" id="bn-items" onclick="go('items')"><span class="bnav-ic">📦</span>อุปกรณ์</button>
+  <button class="bnav" id="bn-pending" onclick="go('pending')" style="position:relative;"><span class="bnav-ic">🛡️</span>รออนุมัติ<span class="bnav-badge" id="bnbadge"></span></button>
+  <button class="bnav" id="bn-scan" onclick="go('scan')"><span class="bnav-ic">📷</span>สแกน</button>
+  <button class="bnav" id="bn-qr" onclick="go('qr')"><span class="bnav-ic">🖨️</span>QR Code</button>
+  <button class="bnav" id="bn-log" onclick="go('log')"><span class="bnav-ic">📋</span>ประวัติ</button>
+  <button class="bnav" id="bn-setup" onclick="go('setup')"><span class="bnav-ic">⚙️</span>ตั้งค่า</button>
 </nav>
 
-<!-- ═══ MODALS (bottom sheets) ═══ -->
+<!-- MODAL: ยืมหลายรายการ -->
+<div class="overlay" id="mMulti" style="display:none" onclick="bgClose(event,'mMulti')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>📤</span><h3>ยืมอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mMulti')">×</button></div>
+  <div class="sheet-body">
+    <div class="fg"><label>ชื่อผู้ยืม</label><input id="mbName" placeholder="ชื่อ-นามสกุล" /></div>
+    <div class="frow">
+      <div class="fg"><label>วันที่ยืม</label><input type="date" id="mbFD"/></div>
+      <div class="fg"><label>เวลา</label><input type="time" id="mbFT"/></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>วันที่จะคืน</label><input type="date" id="mbTD"/></div>
+      <div class="fg"><label>เวลา</label><input type="time" id="mbTT"/></div>
+    </div>
+    <div class="fg">
+      <label>เลือกอุปกรณ์ที่จะยืม (เลือกได้หลายรายการ)</label>
+      <div id="multiItemList" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding:2px;"></div>
+    </div>
+    <div id="mbSelected" style="font-size:12px;color:var(--green);font-weight:600;margin-top:4px;"></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-primary btn-full" onclick="confirmMultiBorrow()">✅ ยืนยันการยืม</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mMulti')">ยกเลิก</button>
+  </div>
+</div>
+</div>
 
-<!-- PIN ก่อนเพิ่มอุปกรณ์ -->
+<!-- MODAL: PIN เพิ่มอุปกรณ์ -->
 <div class="overlay" id="mPinAdd" style="display:none" onclick="bgClose(event,'mPinAdd')">
 <div class="sheet">
   <div class="sheet-handle"><div class="handle-bar"></div></div>
-  <div class="sheet-head"><span>🔒</span><h3>ยืนยันตัวตนเจ้าหน้าที่</h3><button class="sheet-close" onclick="closeM('mPinAdd')">×</button></div>
+  <div class="sheet-head"><span>🔒</span><h3>ยืนยันตัวตน</h3><button class="sheet-close" onclick="closeM('mPinAdd')">×</button></div>
   <div class="sheet-body">
     <div class="note" style="margin-bottom:14px;">เฉพาะเจ้าหน้าที่เท่านั้นที่เพิ่มอุปกรณ์ได้</div>
     <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
     <div class="staff-pick" id="pinAddStaff" style="margin-bottom:14px;"></div>
-    <div class="fg"><label>PIN</label><input type="password" id="pinAddInput" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;" /></div>
+    <div class="fg"><label>PIN</label><input type="password" id="pinAddInput" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
   </div>
   <div class="sheet-foot">
     <button class="btn btn-primary btn-full" onclick="verifyPinAdd()">✅ ยืนยัน</button>
@@ -523,16 +315,17 @@ function out(data) {
 </div>
 </div>
 
-<!-- เพิ่มอุปกรณ์ -->
+<!-- MODAL: เพิ่มอุปกรณ์ -->
 <div class="overlay" id="mAdd" style="display:none" onclick="bgClose(event,'mAdd')">
 <div class="sheet">
   <div class="sheet-handle"><div class="handle-bar"></div></div>
   <div class="sheet-head"><span>📦</span><h3>เพิ่มอุปกรณ์ใหม่</h3><button class="sheet-close" onclick="closeM('mAdd')">×</button></div>
   <div class="sheet-body">
-    <div class="fg"><label>ชื่ออุปกรณ์</label><input id="niName" placeholder="เช่น ปลั๊กไฟ 5 ช่อง" /></div>
+    <div class="fg"><label>ชื่ออุปกรณ์</label><input id="niName" placeholder="เช่น ปลั๊กไฟ No.11"/></div>
     <div class="fg"><label>ไอคอน</label>
       <select id="niIcon">
         <option value="🔌">🔌 ปลั๊กไฟ</option>
+        <option value="📺">📺 จอทีวี</option>
         <option value="💻">💻 โน้ตบุ๊ก</option>
         <option value="📷">📷 กล้อง</option>
         <option value="🎙️">🎙️ ไมโครโฟน</option>
@@ -544,58 +337,13 @@ function out(data) {
     </div>
   </div>
   <div class="sheet-foot">
-    <button class="btn btn-primary btn-full" onclick="confirmAdd()">+ เพิ่มอุปกรณ์</button>
+    <button class="btn btn-primary btn-full" onclick="confirmAdd()">+ เพิ่ม</button>
     <button class="btn btn-ghost btn-full" onclick="closeM('mAdd')">ยกเลิก</button>
   </div>
 </div>
 </div>
 
-<!-- ลบอุปกรณ์ (ต้องผ่าน PIN) -->
-<div class="overlay" id="mDelete" style="display:none" onclick="bgClose(event,'mDelete')">
-<div class="sheet">
-  <div class="sheet-handle"><div class="handle-bar"></div></div>
-  <div class="sheet-head"><span>🗑️</span><h3>ลบอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mDelete')">×</button></div>
-  <div class="sheet-body">
-    <div class="info-box" id="deleteInfo" style="margin-bottom:14px;"></div>
-    <div class="note" style="margin-bottom:14px;">เฉพาะเจ้าหน้าที่เท่านั้นที่ลบอุปกรณ์ได้</div>
-    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
-    <div class="staff-pick" id="deleteStaff" style="margin-bottom:14px;"></div>
-    <div class="fg">
-      <label>PIN</label>
-      <input type="password" id="deletePin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;" />
-    </div>
-  </div>
-  <div class="sheet-foot">
-    <button class="btn btn-danger btn-full" onclick="confirmDelete()">🗑️ ยืนยันลบ</button>
-    <button class="btn btn-ghost btn-full" onclick="closeM('mDelete')">ยกเลิก</button>
-  </div>
-</div>
-</div>
-
-<!-- ยืม -->
-<div class="overlay" id="mBorrow" style="display:none" onclick="bgClose(event,'mBorrow')">
-<div class="sheet">
-  <div class="sheet-handle"><div class="handle-bar"></div></div>
-  <div class="sheet-head"><span id="bIc"></span><h3 id="bTitle">ยืมอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mBorrow')">×</button></div>
-  <div class="sheet-body">
-    <div class="fg"><label>ชื่อผู้ยืม</label><input id="bName" placeholder="ชื่อ-นามสกุล" /></div>
-    <div class="frow">
-      <div class="fg"><label>วันที่ยืม</label><input type="date" id="bFD" /></div>
-      <div class="fg"><label>เวลา</label><input type="time" id="bFT" /></div>
-    </div>
-    <div class="frow">
-      <div class="fg"><label>วันที่จะคืน</label><input type="date" id="bTD" /></div>
-      <div class="fg"><label>เวลา</label><input type="time" id="bTT" /></div>
-    </div>
-  </div>
-  <div class="sheet-foot">
-    <button class="btn btn-primary btn-full" onclick="confirmBorrow()">✅ ยืนยันการยืม</button>
-    <button class="btn btn-ghost btn-full" onclick="closeM('mBorrow')">ยกเลิก</button>
-  </div>
-</div>
-</div>
-
-<!-- แจ้งคืน -->
+<!-- MODAL: แจ้งคืน (เลือกหลายรายการ) -->
 <div class="overlay" id="mReturn" style="display:none" onclick="bgClose(event,'mReturn')">
 <div class="sheet">
   <div class="sheet-handle"><div class="handle-bar"></div></div>
@@ -612,18 +360,14 @@ function out(data) {
 </div>
 </div>
 
-<!-- เจ้าหน้าที่ยืนยัน -->
+<!-- MODAL: เจ้าหน้าที่ยืนยัน -->
 <div class="overlay" id="mConfirm" style="display:none" onclick="bgClose(event,'mConfirm')">
 <div class="sheet">
   <div class="sheet-handle"><div class="handle-bar"></div></div>
   <div class="sheet-head"><span>🛡️</span><h3>ยืนยันรับคืน</h3><button class="sheet-close" onclick="closeM('mConfirm')">×</button></div>
   <div class="sheet-body">
     <div class="info-box" id="confInfo"></div>
-    <div class="fg">
-      <label>PIN เจ้าหน้าที่</label>
-      <input type="password" id="confPin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;" />
-      <div class="fhint" style="text-align:center;">PIN เริ่มต้น: 1234</div>
-    </div>
+    <div class="fg"><label>PIN เจ้าหน้าที่</label><input type="password" id="confPin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
   </div>
   <div class="sheet-foot">
     <button class="btn btn-confirm btn-full" onclick="confirmStaff()">✅ รับคืนเรียบร้อย</button>
@@ -632,15 +376,34 @@ function out(data) {
 </div>
 </div>
 
-<!-- เพิ่มเจ้าหน้าที่ -->
+<!-- MODAL: ลบอุปกรณ์ -->
+<div class="overlay" id="mDelete" style="display:none" onclick="bgClose(event,'mDelete')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>🗑️</span><h3>ลบอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mDelete')">×</button></div>
+  <div class="sheet-body">
+    <div class="info-box" id="deleteInfo"></div>
+    <div class="note" style="margin-bottom:14px;">เฉพาะเจ้าหน้าที่เท่านั้นที่ลบได้</div>
+    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
+    <div class="staff-pick" id="deleteStaff" style="margin-bottom:14px;"></div>
+    <div class="fg"><label>PIN</label><input type="password" id="deletePin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-danger btn-full" onclick="confirmDelete()">🗑️ ยืนยันลบ</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mDelete')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: เพิ่มเจ้าหน้าที่ -->
 <div class="overlay" id="mStaff" style="display:none" onclick="bgClose(event,'mStaff')">
 <div class="sheet">
   <div class="sheet-handle"><div class="handle-bar"></div></div>
   <div class="sheet-head"><span>👤</span><h3>เพิ่มเจ้าหน้าที่</h3><button class="sheet-close" onclick="closeM('mStaff')">×</button></div>
   <div class="sheet-body">
-    <div class="fg"><label>ชื่อ-นามสกุล</label><input id="stName" /></div>
-    <div class="fg"><label>ตำแหน่ง</label><input id="stRole" placeholder="เช่น ธุรการ" /></div>
-    <div class="fg"><label>PIN (4–6 หลัก)</label><input type="password" id="stPin" maxlength="6" placeholder="ตั้ง PIN" /></div>
+    <div class="fg"><label>ชื่อ-นามสกุล</label><input id="stName"/></div>
+    <div class="fg"><label>ตำแหน่ง/ฝ่าย</label><input id="stRole" placeholder="เช่น ฝ่าย HR"/></div>
+    <div class="fg"><label>PIN (4–6 หลัก)</label><input type="password" id="stPin" maxlength="6" placeholder="ตั้ง PIN"/></div>
   </div>
   <div class="sheet-foot">
     <button class="btn btn-primary btn-full" onclick="confirmStaffAdd()">+ เพิ่ม</button>
@@ -650,59 +413,62 @@ function out(data) {
 </div>
 
 <script>
-// ── STATE ──────────────────────────────────────────────────────────────────
-let items = JSON.parse(localStorage.getItem('bt_items') || 'null');
-let logs  = JSON.parse(localStorage.getItem('bt_logs')  || '[]');
-let staff = JSON.parse(localStorage.getItem('bt_staff') || 'null');
-let cfg   = JSON.parse(localStorage.getItem('bt_cfg')   || '{"url":""}');
+// ── DEFAULT DATA ──────────────────────────────────────────────────────────
+const DEFAULT_ITEMS = [
+  {id:'item_1',name:'จอทีวี (ห้อง FRR)',icon:'📺',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_2',name:'ชุดช่วยสอน Sherman',icon:'📦',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_3',name:'ไมโครโฟนแบบสวมหัว',icon:'🎙️',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_4',name:'ปลั๊กไฟ No.1',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_5',name:'ปลั๊กไฟ No.2',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_6',name:'ปลั๊กไฟ No.3',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_7',name:'ปลั๊กไฟ No.4',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_8',name:'ปลั๊กไฟ No.5',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_9',name:'ปลั๊กไฟ No.6',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_10',name:'ปลั๊กไฟ No.7',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_11',name:'ปลั๊กไฟ No.8',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_12',name:'ปลั๊กไฟ No.9',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+  {id:'item_13',name:'ปลั๊กไฟ No.10',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
+];
+const DEFAULT_STAFF = [
+  {id:'s1',name:'บดินทร์',role:'ฝ่าย Training',pin:'1234'},
+  {id:'s2',name:'เจี๊ยบ',role:'ฝ่าย HR',pin:'1234'},
+  {id:'s3',name:'มะปราง',role:'ฝ่าย HR',pin:'1234'},
+  {id:'s4',name:'แอม',role:'ฝ่ายจัดซื้อ',pin:'1234'},
+  {id:'s5',name:'บุษ',role:'ฝ่ายจัดซื้อ',pin:'1234'},
+  {id:'s6',name:'ตั้ม',role:'ฝ่ายไอที',pin:'1234'},
+];
 
-if (!staff) staff = [
-  {id:'s1', name:'เจ้าหน้าที่', role:'ธุรการ', pin:'1234'}
-];
-if (!items) items = [
-  {id:'item_1',name:'ปลั๊กไฟ 5 ช่อง',icon:'🔌',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
-  {id:'item_2',name:'ปลั๊กไฟ 3 ช่อง',icon:'🔌',borrower:'สมชาย ใจดี',borrowFrom:'2026-05-14T09:30',borrowTo:'2026-05-15T17:00',pendingReturn:false,pendingStaff:''},
-  {id:'item_3',name:'โน้ตบุ๊กสำรอง',icon:'💻',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
-  {id:'item_4',name:'ไมโครโฟน',icon:'🎙️',borrower:'มาลี รักดี',borrowFrom:'2026-05-14T10:15',borrowTo:'2026-05-14T16:00',pendingReturn:true,pendingStaff:'s1'},
-  {id:'item_5',name:'โปรเจกเตอร์',icon:'📽️',borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''},
-];
+// ── STATE ─────────────────────────────────────────────────────────────────
+let items = JSON.parse(localStorage.getItem('bt_items') || 'null') || DEFAULT_ITEMS;
+let logs  = JSON.parse(localStorage.getItem('bt_logs')  || '[]');
+let staff = JSON.parse(localStorage.getItem('bt_staff') || 'null') || DEFAULT_STAFF;
+let cfg   = JSON.parse(localStorage.getItem('bt_cfg')   || '{"url":""}');
 save();
 
-let pBorrow=null, pReturn=null, pConfirm=null, selStaff=null, scanner=null;
+let pReturn=null, pConfirm=null, selStaff=null;
+let pDelete=null, delSelStaff=null;
+let pinAddSelStaff=null;
+let scanner=null;
 
 function save(){
-  localStorage.setItem('bt_items', JSON.stringify(items));
-  localStorage.setItem('bt_logs',  JSON.stringify(logs));
-  localStorage.setItem('bt_staff', JSON.stringify(staff));
-  localStorage.setItem('bt_cfg',   JSON.stringify(cfg));
+  localStorage.setItem('bt_items',JSON.stringify(items));
+  localStorage.setItem('bt_logs',JSON.stringify(logs));
+  localStorage.setItem('bt_staff',JSON.stringify(staff));
+  localStorage.setItem('bt_cfg',JSON.stringify(cfg));
 }
 
-// ── UTILS ──────────────────────────────────────────────────────────────────
-function nowStr(){
-  return new Date().toLocaleString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-}
-function todayISO(){ return new Date().toISOString().slice(0,10); }
-function nowTime(){ return new Date().toTimeString().slice(0,5); }
-function fmtDT(s){
-  if(!s) return '—';
-  try { const d=new Date(s); if(isNaN(d)) return s;
-    return d.toLocaleString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
-  catch { return s; }
-}
-function timeLeft(s){
-  if(!s) return '';
-  const h = (new Date(s)-new Date())/3600000;
-  if(h<0) return `<span class="pill pr"><span class="blink">●</span> เกิน${Math.abs(Math.round(h/24))||'<1'}วัน</span>`;
-  if(h<1) return `<span class="pill pr">⏳ น้อยกว่า 1 ชม.</span>`;
-  if(h<24) return `<span class="pill pa">⏳ อีก ${Math.round(h)} ชม.</span>`;
-  return `<span class="pill pb">อีก ${Math.round(h/24)} วัน</span>`;
-}
-function isOverdue(it){ return it.borrower && it.borrowTo && !it.pendingReturn && new Date(it.borrowTo)<new Date(); }
-function staffName(id){ const s=staff.find(x=>x.id===id); return s?s.name:id; }
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function nowStr(){return new Date().toLocaleString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function nowTime(){return new Date().toTimeString().slice(0,5);}
+function fmtDT(s){if(!s)return'—';try{const d=new Date(s);if(isNaN(d))return s;return d.toLocaleString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return s;}}
+function timeLeft(s){if(!s)return'';const h=(new Date(s)-new Date())/3600000;if(h<0)return`<span class="pill pr"><span class="blink">●</span> เกิน${Math.abs(Math.round(h/24))||'<1'}วัน</span>`;if(h<1)return`<span class="pill pr">⏳ &lt;1 ชม.</span>`;if(h<24)return`<span class="pill pa">⏳ อีก ${Math.round(h)} ชม.</span>`;return`<span class="pill pb">อีก ${Math.round(h/24)} วัน</span>`;}
+function isOverdue(it){return it.borrower&&it.borrowTo&&!it.pendingReturn&&new Date(it.borrowTo)<new Date();}
+function staffName(id){const s=staff.find(x=>x.id===id);return s?s.name:id;}
 
-// ── RENDER ─────────────────────────────────────────────────────────────────
+// ── RENDER ────────────────────────────────────────────────────────────────
 function renderStats(){
-  const tot=items.length, avail=items.filter(i=>!i.borrower).length,
+  const tot=items.length,avail=items.filter(i=>!i.borrower).length,
         bor=items.filter(i=>i.borrower&&!i.pendingReturn).length,
         od=items.filter(i=>isOverdue(i)).length;
   document.getElementById('statsGrid').innerHTML=`
@@ -712,7 +478,7 @@ function renderStats(){
     <div class="stat r"><div class="stat-n">${od}</div><div class="stat-l">เกิน</div></div>`;
   const pd=items.filter(i=>i.pendingReturn).length;
   const nb=document.getElementById('bnbadge');
-  nb.textContent=pd; nb.style.display=pd?'':'none';
+  nb.textContent=pd;nb.style.display=pd?'':'none';
 }
 
 function renderItems(){
@@ -725,17 +491,17 @@ function renderItems(){
       pill='<span class="pill pb">🛡️ รอยืนยัน</span>';
       btn=`<button class="btn btn-confirm btn-sm" onclick="openConfirm('${it.id}')">ยืนยัน</button>`;
       meta=`ผู้ยืม: ${it.borrower}`;
-    } else if(it.borrower){
+    }else if(it.borrower){
       pill=over?'<span class="pill pr"><span class="blink">●</span> เกินกำหนด</span>':'<span class="pill pa">📤 ยืมอยู่</span>';
       btn=`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}')">↩️ คืน</button>`;
       meta=`${it.borrower} · ${timeLeft(it.borrowTo).replace(/<[^>]*>/g,'')}`;
-    } else {
+    }else{
       pill='<span class="pill pg">✅ ว่าง</span>';
       btn=`<button class="btn btn-ghost btn-sm" onclick="openBorrow('${it.id}')">ยืม</button>
-           <button class="btn btn-danger btn-sm" style="margin-top:5px" onclick="openDelete('${it.id}')">🗑️ ลบ</button>`;
+           <button class="btn btn-danger btn-sm" onclick="openDelete('${it.id}')">🗑️</button>`;
       meta='พร้อมใช้งาน';
     }
-    return `<div class="item-card ${over?'overdue':''} ${it.pendingReturn?'pending':''}">
+    return`<div class="item-card ${over?'overdue':''} ${it.pendingReturn?'pending':''}">
       <div class="item-icon">${it.icon}</div>
       <div class="item-info">
         <div class="item-name">${it.name}</div>
@@ -769,9 +535,7 @@ function renderPending(){
 function renderLog(){
   const el=document.getElementById('logList');
   if(!logs.length){el.innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';return;}
-  const col={borrow:getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()||'#7a5a1a',
-             return_req:'#8b2020', return_ok:getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||'#1f6b45',
-             delete:'#555555'};
+  const col={borrow:'#7a5a1a',return_req:'#8b2020',return_ok:'#1f6b45',delete:'#555'};
   el.innerHTML=[...logs].reverse().map(l=>`
     <div class="log-row">
       <div class="log-dot" style="background:${col[l.type]||'#aaa'}"></div>
@@ -783,18 +547,17 @@ function renderLog(){
 }
 
 function renderQR(){
-  const el=document.getElementById('qrGrid'); el.innerHTML='';
+  const el=document.getElementById('qrGrid');el.innerHTML='';
   const base=location.href.split('?')[0];
   items.forEach(it=>{
-    const card=document.createElement('div'); card.className='qr-card';
-    const qwrap=document.createElement('div'); qwrap.style.display='flex'; qwrap.style.justifyContent='center';
-    const qd=document.createElement('div'); qwrap.appendChild(qd);
-    card.appendChild(qwrap);
+    const card=document.createElement('div');card.className='qr-card';
+    const qw=document.createElement('div');qw.style.display='flex';qw.style.justifyContent='center';
+    const qd=document.createElement('div');qw.appendChild(qd);
+    card.appendChild(qw);
     card.innerHTML+=`<h4>${it.icon} ${it.name}</h4><p>${it.id}</p>`;
-    el.appendChild(card);
-    card.insertBefore(qwrap, card.firstChild);
-    try{ new QRCode(qd,{text:base+'?scan='+encodeURIComponent(it.id),width:130,height:130,colorDark:'#1c1b18',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M}); }
-    catch(e){ qd.textContent=it.id; }
+    el.appendChild(card);card.insertBefore(qw,card.firstChild);
+    try{new QRCode(qd,{text:base+'?scan='+encodeURIComponent(it.id),width:120,height:120,colorDark:'#1c1b18',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
+    catch(e){qd.textContent=it.id;}
   });
 }
 
@@ -808,56 +571,87 @@ function renderStaffCfg(){
 }
 
 function updateSync(){
-  const dot=document.getElementById('syncDot');
-  const lbl=document.getElementById('syncLabel');
-  if(cfg.url){ dot.className='sync-dot on'; lbl.textContent='เชื่อม Google Sheets'; }
-  else { dot.className='sync-dot'; lbl.textContent='ข้อมูลในเครื่อง'; }
+  const dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
+  if(cfg.url){dot.className='sync-dot on';lbl.textContent='เชื่อม Google Sheets';}
+  else{dot.className='sync-dot';lbl.textContent='ข้อมูลในเครื่อง';}
 }
 
 function render(){
-  renderStats(); renderItems(); renderPending(); renderLog(); renderStaffCfg(); updateSync();
+  renderStats();renderItems();renderPending();renderLog();renderStaffCfg();updateSync();
   document.getElementById('cfgUrl').value=cfg.url||'';
 }
 
-// ── NAVIGATION ─────────────────────────────────────────────────────────────
+// ── NAV ───────────────────────────────────────────────────────────────────
 function go(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.bnav').forEach(el=>el.classList.remove('active'));
   document.getElementById('p-'+p).classList.add('active');
   document.getElementById('bn-'+p).classList.add('active');
-  if(p==='qr') renderQR();
+  if(p==='qr')renderQR();
 }
 
-// ── BORROW ─────────────────────────────────────────────────────────────────
-function openBorrow(id){
-  pBorrow=id; const it=items.find(x=>x.id===id);
-  document.getElementById('bIc').textContent=it.icon;
-  document.getElementById('bTitle').textContent='ยืม: '+it.name;
-  document.getElementById('bName').value='';
-  document.getElementById('bFD').value=todayISO();
-  document.getElementById('bFT').value=nowTime();
-  document.getElementById('bTD').value=todayISO();
-  document.getElementById('bTT').value='17:00';
-  document.getElementById('mBorrow').style.display='flex';
+// ── MULTI BORROW ──────────────────────────────────────────────────────────
+function openMultiBorrow(){
+  document.getElementById('mbName').value='';
+  document.getElementById('mbFD').value=todayISO();
+  document.getElementById('mbFT').value=nowTime();
+  document.getElementById('mbTD').value=todayISO();
+  document.getElementById('mbTT').value='17:00';
+  const avail=items.filter(i=>!i.borrower);
+  if(!avail.length){alert('ไม่มีอุปกรณ์ที่ว่าง');return;}
+  document.getElementById('multiItemList').innerHTML=avail.map(it=>`
+    <label class="cb-item" id="cb-${it.id}">
+      <input type="checkbox" value="${it.id}" onchange="updateMultiCount()"/>
+      <span class="cb-icon">${it.icon}</span>
+      <span class="cb-name">${it.name}</span>
+    </label>`).join('');
+  document.getElementById('mbSelected').textContent='';
+  document.getElementById('mMulti').style.display='flex';
 }
-function confirmBorrow(){
-  const name=document.getElementById('bName').value.trim();
-  const fd=document.getElementById('bFD').value, ft=document.getElementById('bFT').value;
-  const td=document.getElementById('bTD').value, tt=document.getElementById('bTT').value;
+
+function updateMultiCount(){
+  const checked=document.querySelectorAll('#multiItemList input:checked').length;
+  document.getElementById('mbSelected').textContent=checked?`เลือกแล้ว ${checked} รายการ`:'';
+  document.querySelectorAll('#multiItemList .cb-item').forEach(el=>{
+    el.classList.toggle('checked',el.querySelector('input').checked);
+  });
+}
+
+function confirmMultiBorrow(){
+  const name=document.getElementById('mbName').value.trim();
+  const fd=document.getElementById('mbFD').value,ft=document.getElementById('mbFT').value;
+  const td=document.getElementById('mbTD').value,tt=document.getElementById('mbTT').value;
   if(!name){alert('กรุณาใส่ชื่อผู้ยืม');return;}
+  const checked=[...document.querySelectorAll('#multiItemList input:checked')].map(cb=>cb.value);
+  if(!checked.length){alert('กรุณาเลือกอุปกรณ์อย่างน้อย 1 รายการ');return;}
   if(!fd||!td){alert('กรุณาระบุวันที่');return;}
-  const fromDT=fd+'T'+ft, toDT=td+'T'+tt;
+  const fromDT=fd+'T'+ft,toDT=td+'T'+tt;
   if(new Date(toDT)<=new Date(fromDT)){alert('วันคืนต้องหลังวันยืม');return;}
-  const it=items.find(x=>x.id===pBorrow);
-  it.borrower=name; it.borrowFrom=fromDT; it.borrowTo=toDT; it.pendingReturn=false; it.pendingStaff='';
-  logs.push({ts:nowStr(),type:'borrow',detail:`${name} ยืม ${it.name} · ถึง ${fmtDT(toDT)}`,staff:''});
-  save(); render(); closeM('mBorrow');
-  push({action:'borrow',id:it.id,name:it.name,borrower:name,borrowFrom:fromDT,borrowTo:toDT});
+  const names=[];
+  checked.forEach(id=>{
+    const it=items.find(x=>x.id===id);
+    it.borrower=name;it.borrowFrom=fromDT;it.borrowTo=toDT;it.pendingReturn=false;it.pendingStaff='';
+    names.push(it.name);
+    push({action:'borrow',id:it.id,name:it.name,borrower:name,borrowFrom:fromDT,borrowTo:toDT});
+  });
+  logs.push({ts:nowStr(),type:'borrow',detail:`${name} ยืม ${names.join(', ')} ถึง ${fmtDT(toDT)}`,staff:''});
+  save();render();closeM('mMulti');
 }
 
-// ── RETURN ─────────────────────────────────────────────────────────────────
+// ── SINGLE BORROW (จากสแกน) ──────────────────────────────────────────────
+function openBorrow(id){
+  // เปิด multi borrow แต่ pre-select รายการนั้น
+  openMultiBorrow();
+  setTimeout(()=>{
+    const cb=document.querySelector(`#cb-${id} input`);
+    if(cb){cb.checked=true;updateMultiCount();}
+  },50);
+}
+
+// ── RETURN ────────────────────────────────────────────────────────────────
 function openReturn(id){
-  pReturn=id; selStaff=null; const it=items.find(x=>x.id===id);
+  pReturn=id;selStaff=null;
+  const it=items.find(x=>x.id===id);
   document.getElementById('retInfo').innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ผู้ยืม: ${it.borrower}<br>ยืมตั้งแต่: ${fmtDT(it.borrowFrom)}<br>กำหนดคืน: ${fmtDT(it.borrowTo)}`;
   document.getElementById('retStaff').innerHTML=staff.map(s=>`
     <div class="sopt" id="so-${s.id}" onclick="selS('${s.id}')">
@@ -866,23 +660,20 @@ function openReturn(id){
     </div>`).join('');
   document.getElementById('mReturn').style.display='flex';
 }
-function selS(id){
-  selStaff=id;
-  document.querySelectorAll('.sopt').forEach(el=>el.classList.remove('sel'));
-  document.getElementById('so-'+id)?.classList.add('sel');
-}
+function selS(id){selStaff=id;document.querySelectorAll('#retStaff .sopt').forEach(el=>el.classList.remove('sel'));document.getElementById('so-'+id)?.classList.add('sel');}
 function confirmReturn(){
   if(!selStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
   const it=items.find(x=>x.id===pReturn);
-  it.pendingReturn=true; it.pendingStaff=selStaff;
+  it.pendingReturn=true;it.pendingStaff=selStaff;
   logs.push({ts:nowStr(),type:'return_req',detail:`${it.borrower} แจ้งคืน ${it.name}`,staff:selStaff});
-  save(); render(); closeM('mReturn'); go('pending');
+  save();render();closeM('mReturn');go('pending');
   push({action:'requestReturn',id:it.id,name:it.name,borrower:it.borrower,staffId:selStaff});
 }
 
-// ── CONFIRM ────────────────────────────────────────────────────────────────
+// ── CONFIRM ───────────────────────────────────────────────────────────────
 function openConfirm(id){
-  pConfirm=id; const it=items.find(x=>x.id===id);
+  pConfirm=id;
+  const it=items.find(x=>x.id===id);
   const s=staff.find(x=>x.id===it.pendingStaff);
   document.getElementById('confInfo').innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ผู้ยืม: ${it.borrower}<br>เจ้าหน้าที่: ${s?.name||'—'}`;
   document.getElementById('confPin').value='';
@@ -895,28 +686,23 @@ function confirmStaff(){
   if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
   const borrower=it.borrower;
   logs.push({ts:nowStr(),type:'return_ok',detail:`${borrower} คืน ${it.name}`,staff:s.name});
-  it.borrower=''; it.borrowFrom=''; it.borrowTo=''; it.pendingReturn=false; it.pendingStaff='';
-  save(); render(); closeM('mConfirm');
+  it.borrower='';it.borrowFrom='';it.borrowTo='';it.pendingReturn=false;it.pendingStaff='';
+  save();render();closeM('mConfirm');
   push({action:'confirmReturn',id:it.id,name:it.name,borrower,staffId:s.id});
 }
 
-// ── ADD ITEM (ต้องผ่าน PIN ก่อน) ──────────────────────────────────────────
-let pinAddSelStaff = null;
+// ── ADD ITEM (ต้องผ่าน PIN) ───────────────────────────────────────────────
 function openAdd(){
-  pinAddSelStaff = null;
+  pinAddSelStaff=null;
   document.getElementById('pinAddInput').value='';
-  document.getElementById('pinAddStaff').innerHTML = staff.map(s=>`
+  document.getElementById('pinAddStaff').innerHTML=staff.map(s=>`
     <div class="sopt" id="pas-${s.id}" onclick="selPinAddStaff('${s.id}')">
       <div class="avatar">${s.name.slice(0,2)}</div>
       <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
     </div>`).join('');
   document.getElementById('mPinAdd').style.display='flex';
 }
-function selPinAddStaff(id){
-  pinAddSelStaff=id;
-  document.querySelectorAll('#pinAddStaff .sopt').forEach(el=>el.classList.remove('sel'));
-  document.getElementById('pas-'+id)?.classList.add('sel');
-}
+function selPinAddStaff(id){pinAddSelStaff=id;document.querySelectorAll('#pinAddStaff .sopt').forEach(el=>el.classList.remove('sel'));document.getElementById('pas-'+id)?.classList.add('sel');}
 function verifyPinAdd(){
   if(!pinAddSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
   const pin=document.getElementById('pinAddInput').value;
@@ -932,102 +718,15 @@ function confirmAdd(){
   const icon=document.getElementById('niIcon').value;
   const id='item_'+Date.now();
   items.push({id,name,icon,borrower:'',borrowFrom:'',borrowTo:'',pendingReturn:false,pendingStaff:''});
-  save(); render(); closeM('mAdd');
+  save();render();closeM('mAdd');
   push({action:'addItem',id,name,icon});
 }
 
-// ── STAFF ──────────────────────────────────────────────────────────────────
-function openAddStaff(){ ['stName','stRole','stPin'].forEach(i=>document.getElementById(i).value=''); document.getElementById('mStaff').style.display='flex'; }
-function confirmStaffAdd(){
-  const name=document.getElementById('stName').value.trim();
-  const role=document.getElementById('stRole').value.trim();
-  const pin=document.getElementById('stPin').value.trim();
-  if(!name||!pin){alert('กรุณากรอกชื่อและ PIN');return;}
-  staff.push({id:'s'+Date.now(),name,role,pin});
-  save(); renderStaffCfg(); closeM('mStaff');
-}
-function removeStaff(id){
-  if(!confirm('ลบเจ้าหน้าที่คนนี้?'))return;
-  staff=staff.filter(s=>s.id!==id); save(); renderStaffCfg();
-}
-
-// ── CONFIG ─────────────────────────────────────────────────────────────────
-function saveConfig(){
-  cfg.url=document.getElementById('cfgUrl').value.trim();
-  save(); updateSync();
-  const st=document.getElementById('cfgStatus');
-  if(!cfg.url){st.textContent='💾 บันทึกแล้ว (ยังไม่เชื่อม Sheets)';return;}
-  st.textContent='กำลังทดสอบ...';
-  fetch(cfg.url+'?action=getItems')
-    .then(r=>r.json())
-    .then(data=>{
-      if(Array.isArray(data)){ items=data; save(); render(); st.textContent=`✅ สำเร็จ! โหลด ${data.length} รายการจาก Sheets`; }
-      else st.textContent='⚠️ ตอบกลับผิดรูปแบบ ลองตรวจสอบ Apps Script อีกครั้ง';
-    })
-    .catch(()=>st.textContent='❌ เชื่อมต่อไม่ได้ — ตรวจสอบ URL และ Deploy settings');
-}
-
-async function syncNow(){
-  if(!cfg.url){ go('setup'); return; }
-  document.getElementById('syncLabel').textContent='กำลังซิงก์...';
-  try {
-    const [ir,lr]=await Promise.all([
-      fetch(cfg.url+'?action=getItems').then(r=>r.json()),
-      fetch(cfg.url+'?action=getLogs').then(r=>r.json()),
-    ]);
-    if(Array.isArray(ir)) items=ir;
-    if(Array.isArray(lr)) logs=lr;
-    save(); render();
-  } catch { document.getElementById('syncLabel').textContent='ซิงก์ไม่ได้'; }
-}
-
-async function push(data){
-  if(!cfg.url) return;
-  try { await fetch(cfg.url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}}); }
-  catch(e){ console.warn('push error',e); }
-}
-
-// ── SCAN ───────────────────────────────────────────────────────────────────
-function startScan(){
-  if(scanner){ try{scanner.stop();}catch(e){} }
-  document.getElementById('scanResult').style.display='none';
-  scanner=new Html5Qrcode('reader');
-  scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},onScan,()=>{})
-    .catch(e=>alert('ไม่สามารถเปิดกล้องได้: '+e));
-}
-function stopScan(){ if(scanner){try{scanner.stop().catch(()=>{});}catch(e){} scanner=null;} }
-function onScan(text){
-  stopScan();
-  let id;
-  try{ id=new URL(text).searchParams.get('scan')||text; }catch{ id=text; }
-  const it=items.find(x=>x.id===id);
-  const box=document.getElementById('scanResult');
-  box.style.display='';
-  if(it){
-    if(it.pendingReturn){
-      box.innerHTML=`<strong>${it.icon} ${it.name}</strong><br>รอเจ้าหน้าที่ยืนยันการคืนอยู่`;
-    } else if(it.borrower){
-      box.innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ยืมโดย ${it.borrower}<br>คืนภายใน: ${fmtDT(it.borrowTo)}<br><button class="btn btn-amber btn-sm" style="margin-top:8px" onclick="openReturn('${it.id}');go('items')">↩️ แจ้งคืน</button>`;
-    } else {
-      box.innerHTML=`<strong>${it.icon} ${it.name}</strong> — ว่างอยู่<br><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openBorrow('${it.id}');go('items')">📤 ยืมอุปกรณ์นี้</button>`;
-    }
-  } else {
-    box.innerHTML=`❌ ไม่พบอุปกรณ์ (ID: ${id})`;
-  }
-}
-
-// ── COPY CODE ──────────────────────────────────────────────────────────────
-function copyCode(){
-  navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent)
-    .then(()=>alert('คัดลอกโค้ดแล้ว!'));
-}
-
-// ── DELETE ITEM ────────────────────────────────────────────────────────────
-let pDelete=null, delSelStaff=null;
+// ── DELETE ITEM ───────────────────────────────────────────────────────────
 function openDelete(id){
-  pDelete=id; delSelStaff=null;
+  pDelete=id;delSelStaff=null;
   const it=items.find(x=>x.id===id);
-  document.getElementById('deleteInfo').innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ต้องการลบอุปกรณ์นี้ออกจากระบบ?`;
+  document.getElementById('deleteInfo').innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ต้องการลบออกจากระบบ?`;
   document.getElementById('deletePin').value='';
   document.getElementById('deleteStaff').innerHTML=staff.map(s=>`
     <div class="sopt" id="ds-${s.id}" onclick="selDelStaff('${s.id}')">
@@ -1036,11 +735,7 @@ function openDelete(id){
     </div>`).join('');
   document.getElementById('mDelete').style.display='flex';
 }
-function selDelStaff(id){
-  delSelStaff=id;
-  document.querySelectorAll('#deleteStaff .sopt').forEach(el=>el.classList.remove('sel'));
-  document.getElementById('ds-'+id)?.classList.add('sel');
-}
+function selDelStaff(id){delSelStaff=id;document.querySelectorAll('#deleteStaff .sopt').forEach(el=>el.classList.remove('sel'));document.getElementById('ds-'+id)?.classList.add('sel');}
 function confirmDelete(){
   if(!delSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
   const pin=document.getElementById('deletePin').value;
@@ -1049,18 +744,81 @@ function confirmDelete(){
   const it=items.find(x=>x.id===pDelete);
   logs.push({ts:nowStr(),type:'delete',detail:`${s.name} ลบอุปกรณ์ ${it.name}`,staff:s.name});
   items=items.filter(x=>x.id!==pDelete);
-  save(); render(); closeM('mDelete');
+  save();render();closeM('mDelete');
   push({action:'deleteItem',id:pDelete});
 }
 
-// ── MODAL ──────────────────────────────────────────────────────────────────
-function closeM(id){ document.getElementById(id).style.display='none'; }
-function bgClose(e,id){ if(e.target===e.currentTarget) closeM(id); }
+// ── STAFF ─────────────────────────────────────────────────────────────────
+function openAddStaff(){['stName','stRole','stPin'].forEach(i=>document.getElementById(i).value='');document.getElementById('mStaff').style.display='flex';}
+function confirmStaffAdd(){
+  const name=document.getElementById('stName').value.trim();
+  const role=document.getElementById('stRole').value.trim();
+  const pin=document.getElementById('stPin').value.trim();
+  if(!name||!pin){alert('กรุณากรอกชื่อและ PIN');return;}
+  staff.push({id:'s'+Date.now(),name,role,pin});
+  save();renderStaffCfg();closeM('mStaff');
+}
+function removeStaff(id){
+  if(!confirm('ลบเจ้าหน้าที่คนนี้?'))return;
+  staff=staff.filter(s=>s.id!==id);save();renderStaffCfg();
+}
 
-// ── INIT ───────────────────────────────────────────────────────────────────
+// ── CONFIG & SYNC ─────────────────────────────────────────────────────────
+function saveConfig(){
+  cfg.url=document.getElementById('cfgUrl').value.trim();save();updateSync();
+  const st=document.getElementById('cfgStatus');
+  if(!cfg.url){st.textContent='💾 บันทึกแล้ว (ยังไม่เชื่อม Sheets)';return;}
+  st.textContent='กำลังทดสอบ...';
+  fetch(cfg.url+'?action=getItems').then(r=>r.json()).then(data=>{
+    if(Array.isArray(data)){items=data;save();render();st.textContent=`✅ สำเร็จ! โหลด ${data.length} รายการ`;}
+    else st.textContent='⚠️ ตอบกลับผิดรูปแบบ';
+  }).catch(()=>st.textContent='❌ เชื่อมต่อไม่ได้');
+}
+async function syncNow(){
+  if(!cfg.url){go('setup');return;}
+  document.getElementById('syncLabel').textContent='กำลังซิงก์...';
+  try{
+    const[ir,lr]=await Promise.all([fetch(cfg.url+'?action=getItems').then(r=>r.json()),fetch(cfg.url+'?action=getLogs').then(r=>r.json())]);
+    if(Array.isArray(ir))items=ir;if(Array.isArray(lr))logs=lr;
+    save();render();
+  }catch{document.getElementById('syncLabel').textContent='ซิงก์ไม่ได้';}
+}
+async function push(data){if(!cfg.url)return;try{await fetch(cfg.url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});}catch(e){console.warn(e);}}
+
+// ── SCAN ──────────────────────────────────────────────────────────────────
+function startScan(){
+  if(scanner){try{scanner.stop();}catch(e){}}
+  document.getElementById('scanResult').style.display='none';
+  scanner=new Html5Qrcode('reader');
+  scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},onScan,()=>{})
+    .catch(e=>alert('ไม่สามารถเปิดกล้องได้: '+e));
+}
+function stopScan(){if(scanner){try{scanner.stop().catch(()=>{});}catch(e){}scanner=null;}}
+function onScan(text){
+  stopScan();
+  let id;try{id=new URL(text).searchParams.get('scan')||text;}catch{id=text;}
+  const it=items.find(x=>x.id===id);
+  const box=document.getElementById('scanResult');box.style.display='';
+  if(it){
+    if(it.pendingReturn){
+      box.innerHTML=`<strong>${it.icon} ${it.name}</strong><br>รอเจ้าหน้าที่ยืนยันการคืนอยู่`;
+    }else if(it.borrower){
+      box.innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ยืมโดย: ${it.borrower}<br>คืนภายใน: ${fmtDT(it.borrowTo)}<br>
+        <button class="btn btn-amber btn-sm" style="margin-top:8px" onclick="openReturn('${it.id}');go('items')">↩️ แจ้งคืน</button>`;
+    }else{
+      box.innerHTML=`<strong>${it.icon} ${it.name}</strong> — ว่างอยู่<br>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openBorrow('${it.id}');go('items')">📤 ยืมอุปกรณ์นี้</button>`;
+    }
+  }else{box.innerHTML=`❌ ไม่พบอุปกรณ์ (ID: ${id})`;}
+}
+
+function copyCode(){navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent).then(()=>alert('คัดลอกโค้ดแล้ว!'));}
+function closeM(id){document.getElementById(id).style.display='none';}
+function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
+
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
-  if(p){ go('scan'); setTimeout(()=>onScan(location.href),400); }
+  if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
 });
 render();
 </script>
