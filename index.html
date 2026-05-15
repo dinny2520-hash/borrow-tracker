@@ -266,7 +266,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
   <button class="bnav" id="bn-scan" onclick="go('scan')"><span class="bnav-ic">📷</span>สแกน</button>
   <button class="bnav" id="bn-qr" onclick="go('qr')"><span class="bnav-ic">🖨️</span>QR Code</button>
   <button class="bnav" id="bn-log" onclick="go('log')"><span class="bnav-ic">📋</span>ประวัติ</button>
-  <button class="bnav" id="bn-setup" onclick="go('setup')"><span class="bnav-ic">⚙️</span>ตั้งค่า</button>
+  <button class="bnav" id="bn-setup" onclick="openSetupPin()"><span class="bnav-ic">⚙️</span>ตั้งค่า</button>
 </nav>
 
 <!-- MODAL: ยืมหลายรายการ -->
@@ -412,6 +412,26 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 </div>
 </div>
 
+<!-- MODAL: PIN เข้าหน้าตั้งค่า -->
+<div class="overlay" id="mSetupPin" style="display:none" onclick="bgClose(event,'mSetupPin')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>🔒</span><h3>เข้าหน้าตั้งค่า</h3><button class="sheet-close" onclick="closeM('mSetupPin')">×</button></div>
+  <div class="sheet-body">
+    <div class="note" style="margin-bottom:14px;">เฉพาะผู้ดูแลระบบเท่านั้น</div>
+    <div class="fg">
+      <label>PIN ผู้ดูแลระบบ</label>
+      <input type="password" id="setupPinInput" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/>
+      <div class="fhint" style="text-align:center;">ติดต่อ บดินทร์ หากไม่ทราบ PIN</div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-primary btn-full" onclick="verifySetupPin()">✅ เข้าสู่หน้าตั้งค่า</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mSetupPin')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
 <script>
 // ── DEFAULT DATA ──────────────────────────────────────────────────────────
 const DEFAULT_ITEMS = [
@@ -439,7 +459,7 @@ const DEFAULT_STAFF = [
 ];
 
 // ── VERSION CHECK (เปลี่ยนตัวเลขนี้ทุกครั้งที่อัปเดตข้อมูล) ────────────────
-const APP_VERSION = '2';
+const APP_VERSION = '3';
 const savedVersion = localStorage.getItem('bt_version');
 if (savedVersion !== APP_VERSION) {
   // ล้างข้อมูลเก่า แต่เก็บ URL และ PIN ไว้
@@ -826,6 +846,23 @@ function onScan(text){
 }
 
 function copyCode(){navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent).then(()=>alert('คัดลอกโค้ดแล้ว!'));}
+
+// ── SETUP PIN ─────────────────────────────────────────────────────────────
+// PIN ผู้ดูแลระบบ (บดินทร์) — เปลี่ยนได้ที่นี่
+const ADMIN_ID = 's1'; // s1 = บดินทร์
+function openSetupPin(){
+  document.getElementById('setupPinInput').value='';
+  document.getElementById('mSetupPin').style.display='flex';
+}
+function verifySetupPin(){
+  const pin=document.getElementById('setupPinInput').value;
+  const admin=staff.find(x=>x.id===ADMIN_ID);
+  if(!admin||pin!==admin.pin){alert('PIN ไม่ถูกต้อง');return;}
+  closeM('mSetupPin');
+  go('setup');
+  document.getElementById('bn-setup').classList.add('active');
+}
+
 function closeM(id){document.getElementById(id).style.display='none';}
 function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 
