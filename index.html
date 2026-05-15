@@ -438,6 +438,19 @@ const DEFAULT_STAFF = [
   {id:'s6',name:'ตั้ม',role:'ฝ่ายไอที',pin:'1234'},
 ];
 
+// ── VERSION CHECK (เปลี่ยนตัวเลขนี้ทุกครั้งที่อัปเดตข้อมูล) ────────────────
+const APP_VERSION = '2';
+const savedVersion = localStorage.getItem('bt_version');
+if (savedVersion !== APP_VERSION) {
+  // ล้างข้อมูลเก่า แต่เก็บ URL และ PIN ไว้
+  const savedCfg = localStorage.getItem('bt_cfg');
+  const savedStaff = localStorage.getItem('bt_staff');
+  localStorage.clear();
+  if (savedCfg) localStorage.setItem('bt_cfg', savedCfg);
+  if (savedStaff) localStorage.setItem('bt_staff', savedStaff);
+  localStorage.setItem('bt_version', APP_VERSION);
+}
+
 // ── STATE ─────────────────────────────────────────────────────────────────
 let items = JSON.parse(localStorage.getItem('bt_items') || 'null') || DEFAULT_ITEMS;
 let logs  = JSON.parse(localStorage.getItem('bt_logs')  || '[]');
