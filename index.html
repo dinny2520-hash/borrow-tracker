@@ -161,6 +161,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
 .empty{text-align:center;padding:36px 18px;color:var(--text3);font-size:13px;}
 .empty-ic{font-size:34px;margin-bottom:7px;}
 @media print{.topbar,.bottom-nav,.sec-head,.stats{display:none!important;}.qr-grid{grid-template-columns:repeat(3,1fr);}}
+.report-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;}
+.report-room{font-size:14px;font-weight:700;margin-bottom:8px;}
+.report-bar-wrap{background:var(--bg);border-radius:4px;height:10px;overflow:hidden;margin:4px 0;}
+.report-bar{height:100%;border-radius:4px;background:var(--purple);transition:.3s;}
+.report-count{font-size:12px;color:var(--text2);margin-top:3px;}
+.report-detail{font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6;}
 
 /* TOAST */
 .toast{
@@ -269,6 +275,19 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
     <div class="log-list" id="logList"></div>
   </div>
 
+  <!-- รายงาน -->
+  <div class="page" id="p-report">
+    <div class="sec" style="padding-top:12px;">
+      <div class="sec-head">
+        <span class="sec-title">รายงานการจองห้องประชุม</span>
+        <div class="sec-right">
+          <select id="reportMonth" onchange="renderReport()" style="font-size:12px;padding:4px 8px;width:auto;"></select>
+        </div>
+      </div>
+      <div id="reportContent"></div>
+    </div>
+  </div>
+
   <!-- ตั้งค่า -->
   <div class="page" id="p-setup">
     <div class="setup-wrap">
@@ -323,6 +342,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
   <button class="bnav" id="bn-rooms" onclick="go('rooms')"><span class="bnav-ic">🚪</span>ห้องประชุม</button>
   <button class="bnav" id="bn-bookings" onclick="go('bookings')"><span class="bnav-ic">📅</span>การจอง</button>
   <button class="bnav" id="bn-pending" onclick="go('pending')" style="position:relative;"><span class="bnav-ic">🛡️</span>คืนของ<span class="bnav-badge" id="bnbadge"></span></button>
+  <button class="bnav" id="bn-report" onclick="go('report')"><span class="bnav-ic">📊</span>รายงาน</button>
   <button class="bnav" id="bn-setup" onclick="openSetupPin()"><span class="bnav-ic">⚙️</span>ตั้งค่า</button>
 </nav>
 
@@ -525,7 +545,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='15';
+const APP_VERSION='16';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -687,14 +707,21 @@ function renderRooms(){
     let headerPill=current?'<span class="pill pa">🔴 ใช้งานอยู่</span>':
                    upcoming.length?'<span class="pill pp">📅 มีการจอง</span>':
                    '<span class="pill pg">✅ ว่าง</span>';
-    const slots=active.map(b=>`
+    // กรองออกถ้าเลยเวลาแล้ว (คืนสถานะว่างอัตโนมัติ)
+    const validBookings=active.filter(b=>new Date(b.to)>=now);
+    const expiredBookings=active.filter(b=>new Date(b.to)<now);
+    // mark expired as returned อัตโนมัติ
+    expiredBookings.forEach(b=>{ b.returned=true; });
+    if(expiredBookings.length) save();
+    const slots=validBookings.map(b=>`
       <div class="rslot">
-        <div class="rslot-dot" style="background:${new Date(b.to)<now?'#aaa':new Date(b.from)<=now?'#f4b942':'#5b2d8e'}"></div>
-        <div class="rslot-info">
+        <div class="rslot-dot" style="background:${new Date(b.from)<=now?'#f4b942':'#5b2d8e'}"></div>
+        <div class="rslot-info" style="flex:1">
           <span class="slot-name">${b.booker}</span>${b.purpose?' · '+b.purpose:''}<br>
           <span style="color:var(--text3)">${fmtDT(b.from)} – ${fmtDT(b.to)}</span>
           ${b.itemNames&&b.itemNames.length?'<br><span style="color:var(--purple)">📦 '+b.itemNames.join(', ')+'</span>':''}
         </div>
+        <button class="btn btn-danger btn-sm" style="padding:2px 7px;font-size:10px;flex-shrink:0;" onclick="openCancelBooking('${rm.id}','${b.id}')">ยกเลิก</button>
       </div>`).join('');
     return`<div class="room-card">
       <div class="room-head">
@@ -843,9 +870,10 @@ function go(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.bnav').forEach(el=>el.classList.remove('active'));
   document.getElementById('p-'+p).classList.add('active');
-  document.getElementById('bn-'+p).classList.add('active');
+  document.getElementById('bn-'+p)?.classList.add('active');
   if(p==='qr')renderQR();
   if(p==='bookings')renderBookings();
+  if(p==='report'){initReportMonths();renderReport();}
 }
 
 // ── OPEN BOOKING ──────────────────────────────────────────────────────────
@@ -1283,6 +1311,62 @@ function onScan(text){
 
 // ── COPY / MODAL ──────────────────────────────────────────────────────────
 function copyCode(){navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent).then(()=>alert('คัดลอกแล้ว!'));}
+
+// ── REPORT ────────────────────────────────────────────────────────────────
+function initReportMonths(){
+  const sel=document.getElementById('reportMonth');
+  if(!sel)return;
+  const months=new Set();
+  // รวบรวมเดือนจาก bookings ทั้งหมด
+  items.filter(i=>i.type==='room').forEach(rm=>{
+    rm.bookings.filter(b=>!b.cancelled).forEach(b=>{
+      const d=new Date(b.from);
+      if(!isNaN(d)) months.add(d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'));
+    });
+  });
+  // เพิ่มเดือนปัจจุบันด้วย
+  const now=new Date();
+  months.add(now.getFullYear()+'-'+(now.getMonth()+1).toString().padStart(2,'0'));
+  const sorted=[...months].sort().reverse();
+  const curVal=sel.value;
+  sel.innerHTML=sorted.map(m=>{
+    const [y,mo]=m.split('-');
+    const thYear=parseInt(y)+543;
+    const monthNames=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return`<option value="${m}">${monthNames[parseInt(mo)-1]} ${thYear}</option>`;
+  }).join('');
+  if(curVal&&sorted.includes(curVal)) sel.value=curVal;
+}
+
+function renderReport(){
+  const sel=document.getElementById('reportMonth');
+  const el=document.getElementById('reportContent');
+  if(!sel||!el)return;
+  initReportMonths();
+  const [y,mo]=sel.value.split('-').map(Number);
+  const rooms=items.filter(i=>i.type==='room');
+  // นับการจองแต่ละห้องในเดือนนั้น
+  const data=rooms.map(rm=>{
+    const bks=rm.bookings.filter(b=>{
+      if(b.cancelled)return false;
+      const d=new Date(b.from);
+      return d.getFullYear()===y&&(d.getMonth()+1)===mo;
+    });
+    return{room:rm, count:bks.length, bookings:bks};
+  }).sort((a,b2)=>b2.count-a.count);
+  const maxCount=Math.max(...data.map(d=>d.count),1);
+  if(!data.some(d=>d.count>0)){
+    el.innerHTML='<div class="empty"><div class="empty-ic">📊</div>ไม่มีการจองในเดือนนี้</div>';
+    return;
+  }
+  el.innerHTML=data.map(d=>`
+    <div class="report-card">
+      <div class="report-room">${d.room.icon} ${d.room.name}</div>
+      <div class="report-bar-wrap"><div class="report-bar" style="width:${(d.count/maxCount*100)}%"></div></div>
+      <div class="report-count">จำนวน <strong>${d.count}</strong> ครั้ง</div>
+      ${d.bookings.length?`<div class="report-detail">${d.bookings.map(b=>`📅 ${b.booker}${b.purpose?' ('+b.purpose+')':''} · ${fmtDT(b.from)}`).join('<br>')}</div>`:''}
+    </div>`).join('');
+}
 
 // ── TOAST ─────────────────────────────────────────────────────────────────
 function showToast(msg,duration=2000){
