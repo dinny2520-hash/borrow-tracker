@@ -524,7 +524,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='8';
+const APP_VERSION='9';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -1221,9 +1221,17 @@ async function syncNow(){
   if(!cfg.url){go('setup');return;}
   document.getElementById('syncLabel').textContent='กำลังซิงก์...';
   try{
-    const[ir,lr]=await Promise.all([fetch(cfg.url+'?action=getItems').then(r=>r.json()),fetch(cfg.url+'?action=getLogs').then(r=>r.json())]);
-    if(Array.isArray(ir))items=ir;if(Array.isArray(lr))logs=lr;
-    save();render();
+    const[ir,lr]=await Promise.all([
+      fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json()),
+      fetch(cfg.url+'?action=getLogs&t='+Date.now()).then(r=>r.json())
+    ]);
+    if(Array.isArray(ir))items=ir;
+    if(Array.isArray(lr))logs=lr;
+    save();
+    // render เฉพาะตอนไม่มี modal เปิดอยู่
+    const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
+    if(!hasOpenModal) render();
+    else updateSync(); // อัปเดตแค่ dot sync
   }catch{document.getElementById('syncLabel').textContent='ซิงก์ไม่ได้';}
 }
 async function push(data){if(!cfg.url)return;try{await fetch(cfg.url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});}catch(e){console.warn(e);}}
@@ -1278,15 +1286,17 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
-  // auto sync จาก Sheets ทุก 30 วินาที (หยุดถ้ามี modal เปิดอยู่)
+  // auto sync จาก Sheets ทุก 30 วินาที
+  // อัปเดตข้อมูลใน background เท่านั้น ไม่ re-render ถ้ามี modal เปิดอยู่
   setInterval(async ()=>{
     if(!cfg.url)return;
-    // ถ้ามี overlay เปิดอยู่ ไม่ sync เพื่อไม่ให้ขัดการกรอกข้อมูล
-    const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
-    if(hasOpenModal)return;
     try{
       const ir=await fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json());
-      if(Array.isArray(ir)){items=ir;save();render();}
+      if(!Array.isArray(ir))return;
+      items=ir; save();
+      // render เฉพาะตอนที่ไม่มี modal เปิดอยู่
+      const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
+      if(!hasOpenModal) render();
     }catch(e){}
   },30000);
 });
