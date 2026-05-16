@@ -161,6 +161,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
 .empty{text-align:center;padding:36px 18px;color:var(--text3);font-size:13px;}
 .empty-ic{font-size:34px;margin-bottom:7px;}
 @media print{.topbar,.bottom-nav,.sec-head,.stats{display:none!important;}.qr-grid{grid-template-columns:repeat(3,1fr);}}
+
+/* TOAST */
+.toast{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:var(--green);color:#fff;
+  padding:14px 28px;border-radius:12px;
+  font-size:16px;font-weight:700;
+  z-index:999;pointer-events:none;
+  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  opacity:0;transition:opacity .25s;
+}
+.toast.show{opacity:1;}
+
+/* CONFLICT WARNING in booking list */
+.conflict-warn{background:var(--red-bg);border:1px solid #e8b4b4;border-radius:var(--r);padding:6px 10px;font-size:11px;color:var(--red);margin-top:4px;}
 </style>
 </head>
 <body>
@@ -231,10 +246,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
     </div>
   </div>
 
-  <!-- สแกน -->
-  <div class="page" id="p-scan">
-    <div class="scan-wrap">
-      <div id="reader"></div>
       <div id="scanResult" style="display:none" class="scan-result"></div>
       <div style="display:flex;gap:8px;margin-top:10px;">
         <button class="btn btn-primary btn-sm" onclick="startScan()">📷 เปิดกล้อง</button>
@@ -311,9 +322,11 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
   <button class="bnav" id="bn-rooms" onclick="go('rooms')"><span class="bnav-ic">🚪</span>ห้องประชุม</button>
   <button class="bnav" id="bn-bookings" onclick="go('bookings')"><span class="bnav-ic">📅</span>การจอง</button>
   <button class="bnav" id="bn-pending" onclick="go('pending')" style="position:relative;"><span class="bnav-ic">🛡️</span>คืนของ<span class="bnav-badge" id="bnbadge"></span></button>
-  <button class="bnav" id="bn-scan" onclick="go('scan')"><span class="bnav-ic">📷</span>สแกน</button>
   <button class="bnav" id="bn-setup" onclick="openSetupPin()"><span class="bnav-ic">⚙️</span>ตั้งค่า</button>
 </nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
 <!-- MODAL: จองอุปกรณ์/ห้อง -->
 <div class="overlay" id="mBook" style="display:none" onclick="bgClose(event,'mBook')">
@@ -833,13 +846,18 @@ function openBooking(mode,preSelectId){
     document.getElementById('bkNoItem').checked=false;
     // render ห้อง
     const rooms=items.filter(i=>i.type==='room');
-    document.getElementById('bkRoomList').innerHTML=rooms.map(r=>`
-      <label class="cb-item" id="cbr-${r.id}">
-        <input type="checkbox" name="bkRoom" value="${r.id}" onchange="onRoomCheck()"/>
+    document.getElementById('bkRoomList').innerHTML=rooms.map(r=>{
+      const activeBookings=r.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
+      const bookingInfo=activeBookings.length?`<div style="font-size:10px;color:var(--text3);margin-top:2px;line-height:1.5">${activeBookings.map(b=>`📅 ${b.booker}: ${fmtDT(b.from)}–${fmtDT(b.to)}`).join('<br>')}</div>`:'';
+      return`<label class="cb-item" id="cbr-${r.id}" style="align-items:flex-start;">
+        <input type="checkbox" name="bkRoom" value="${r.id}" onchange="onRoomCheck()" style="margin-top:3px;"/>
         <span class="cb-icon">${r.icon}</span>
-        <span class="cb-name">${r.name}</span>
-        <span class="cb-status" style="font-size:10px;"></span>
-      </label>`).join('');
+        <div style="flex:1">
+          <div class="cb-name">${r.name}</div>
+          ${bookingInfo}
+        </div>
+        <span class="cb-status" style="font-size:10px;white-space:nowrap;margin-top:2px;"></span>
+      </label>`;}).join('');
     if(preSelectId){
       setTimeout(()=>{
         const cb=document.querySelector(`#cbr-${preSelectId} input`);
@@ -863,13 +881,18 @@ function openBooking(mode,preSelectId){
 
 function refreshItemCheckboxes(preSelectId){
   const myItems=items.filter(i=>i.type==='item');
-  document.getElementById('bkItemList').innerHTML=myItems.map(it=>`
-    <label class="cb-item" id="cbi-${it.id}">
-      <input type="checkbox" value="${it.id}" onchange="updateItemCount()"/>
+  document.getElementById('bkItemList').innerHTML=myItems.map(it=>{
+    const activeBookings=it.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
+    const bookingInfo=activeBookings.length?`<div style="font-size:10px;color:var(--text3);margin-top:2px;line-height:1.5">${activeBookings.map(b=>`📅 ${b.booker}: ${fmtDT(b.from)}–${fmtDT(b.to)}`).join('<br>')}</div>`:'';
+    return`<label class="cb-item" id="cbi-${it.id}" style="align-items:flex-start;">
+      <input type="checkbox" value="${it.id}" onchange="updateItemCount()" style="margin-top:3px;"/>
       <span class="cb-icon">${it.icon}</span>
-      <span class="cb-name">${it.name}</span>
-      <span class="cb-status" id="cbst-${it.id}"></span>
-    </label>`).join('');
+      <div style="flex:1">
+        <div class="cb-name">${it.name}</div>
+        ${bookingInfo}
+      </div>
+      <span class="cb-status" id="cbst-${it.id}" style="font-size:10px;white-space:nowrap;margin-top:2px;"></span>
+    </label>`;}).join('');
   if(preSelectId&&items.find(x=>x.id===preSelectId&&x.type==='item')){
     setTimeout(()=>{
       const cb=document.querySelector(`#cbi-${preSelectId} input`);
@@ -959,12 +982,12 @@ function confirmBooking(){
   if(bookMode==='item'&&!checkedItems.length){alert('กรุณาเลือกอุปกรณ์อย่างน้อย 1 รายการ');return;}
   if(bookMode==='room'&&!noItem&&!checkedItems.length&&!confirm('ยืนยันจองห้องโดยไม่พ่วงอุปกรณ์?'))return;
 
-  // ตรวจสอบ conflict อีกครั้ง
+  // ตรวจสอบ conflict อีกครั้งก่อน confirm — block จริง
   const allTarget=[...checkedItems,...checkedRooms];
   for(const id of allTarget){
     const it=items.find(x=>x.id===id);
     if(it&&hasConflict(it.bookings,fromDT,toDT)){
-      alert(`❌ "${it.name}" ติดการจองช่วงเวลานี้แล้ว กรุณาเลือกช่วงเวลาอื่น`);return;
+      alert(`❌ มีผู้จองช่วงเวลานี้แล้ว\n"${it.name}" ไม่สามารถจองได้ กรุณาเลือกช่วงเวลาอื่น`);return;
     }
   }
 
@@ -986,6 +1009,7 @@ function confirmBooking(){
   const targets=[...checkedItems,...checkedRooms].map(id=>items.find(x=>x.id===id)?.name).filter(Boolean);
   logs.push({ts:nowStr(),type:'booking',detail:`${name} จอง ${targets.join(', ')} ${fmtDT(fromDT)} – ${fmtDT(toDT)}${purpose?' ('+purpose+')':''}`,staff:''});
   save();render();closeM('mBook');
+  showToast('✅ จองสำเร็จ!');
   // push to Sheets
   allTarget.forEach(id=>{
     const it=items.find(x=>x.id===id);
@@ -1181,6 +1205,13 @@ function onScan(text){
 
 // ── COPY / MODAL ──────────────────────────────────────────────────────────
 function copyCode(){navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent).then(()=>alert('คัดลอกแล้ว!'));}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(msg,duration=2000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),duration);
+}
 function closeM(id){document.getElementById(id).style.display='none';}
 function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 
