@@ -544,7 +544,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='17';
+const APP_VERSION='18';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -1101,7 +1101,6 @@ function openBookDetail(itemId,bkId){
 
 // ── CANCEL BOOKING (มี PIN) ───────────────────────────────────────────────
 let pCancelItemId=null, pCancelBkId=null, cancelSelStaff=null;
-let cancelSelStaff=null;
 function openCancelBooking(itemId,bkId){
   pCancelItemId=itemId; pCancelBkId=bkId; cancelSelStaff=null;
   const it=items.find(x=>x.id===itemId);
@@ -1285,16 +1284,17 @@ async function syncNow(){
       fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json()),
       fetch(cfg.url+'?action=getLogs&t='+Date.now()).then(r=>r.json())
     ]);
-    if(Array.isArray(ir))items=ir;
-    if(Array.isArray(lr))logs=lr;
+    if(Array.isArray(ir)&&ir.length>0) items=ir;
+    if(Array.isArray(lr)) logs=lr;
     save();
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
-    if(hasOpenModal){
-      updateSync();
-      return; // ไม่ render เด็ดขาดถ้า modal เปิดอยู่
-    }
-    render();
-  }catch{document.getElementById('syncLabel').textContent='ซิงก์ไม่ได้';}
+    if(!hasOpenModal) render();
+    updateSync();
+    document.getElementById('syncLabel').textContent='เชื่อม Google Sheets';
+  }catch(e){
+    document.getElementById('syncLabel').textContent='ซิงก์ไม่ได้';
+    console.warn('syncNow error',e);
+  }
 }
 async function push(data){
   if(!cfg.url)return;
@@ -1411,23 +1411,28 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
-  // sync อัตโนมัติทุก 30 วินาที — หยุดถ้ามี popup เปิดอยู่
-  async function bgSync(){
-    if(!cfg.url)return;
+  // sync อัตโนมัติ
+  async function bgSync(force){
+    if(!cfg.url){ console.warn('No URL configured'); return; }
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
-    if(hasOpenModal)return; // ไม่ sync ถ้ากำลังกรอกฟอร์ม
+    if(!force && hasOpenModal) return;
     try{
-      const ir=await fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json());
-      if(Array.isArray(ir)){items=ir;save();render();}
-    }catch(e){}
+      const url=cfg.url+'?action=getItems&t='+Date.now();
+      const res=await fetch(url);
+      const ir=await res.json();
+      if(Array.isArray(ir)&&ir.length>0){
+        items=ir; save(); render();
+        document.getElementById('syncLabel').textContent='เชื่อม Google Sheets';
+      }
+    }catch(e){ console.warn('bgSync error',e); }
   }
-  // sync ทันทีตอนเปิดแอป
-  setTimeout(bgSync, 1000);
+  // sync ทันทีตอนเปิดแอป (force=true ไม่สนใจ modal)
+  setTimeout(()=>bgSync(true), 800);
   // sync ทุก 30 วินาที
-  setInterval(bgSync, 30000);
+  setInterval(()=>bgSync(false), 30000);
   // sync ทุกครั้งที่กลับมาที่แท็บ
   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible') bgSync();
+    if(document.visibilityState==='visible') bgSync(false);
   });
 });
 render();
