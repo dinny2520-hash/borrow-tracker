@@ -525,7 +525,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='14';
+const APP_VERSION='15';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -1305,11 +1305,11 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
-  // sync ตอนเปิดแอป และทุกครั้งที่กลับมาที่แท็บ
+  // sync อัตโนมัติทุก 30 วินาที — หยุดถ้ามี popup เปิดอยู่
   async function bgSync(){
     if(!cfg.url)return;
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
-    if(hasOpenModal)return;
+    if(hasOpenModal)return; // ไม่ sync ถ้ากำลังกรอกฟอร์ม
     try{
       const ir=await fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json());
       if(Array.isArray(ir)){items=ir;save();render();}
@@ -1317,6 +1317,8 @@ window.addEventListener('load',()=>{
   }
   // sync ทันทีตอนเปิดแอป
   setTimeout(bgSync, 1000);
+  // sync ทุก 30 วินาที
+  setInterval(bgSync, 30000);
   // sync ทุกครั้งที่กลับมาที่แท็บ
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible') bgSync();
