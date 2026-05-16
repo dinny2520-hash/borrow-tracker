@@ -403,12 +403,23 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
   <div class="sheet-head"><span>❌</span><h3>ยกเลิกการจอง</h3><button class="sheet-close" onclick="closeM('mCancel')">×</button></div>
   <div class="sheet-body">
     <div class="info-box" id="cancelInfo"></div>
-    <div class="note" style="margin-bottom:12px;">กรอกชื่อที่ใช้จองเพื่อยืนยัน</div>
+    <!-- ทางที่ 1: กรอกชื่อตัวเอง -->
+    <div class="note" style="margin-bottom:8px;">ยกเลิกเองโดยกรอกชื่อที่จองไว้</div>
     <div class="fg">
       <label>ชื่อผู้จอง</label>
       <input type="text" id="cancelName" placeholder="กรอกชื่อที่ใช้จอง"/>
-      <div class="fhint">ต้องตรงกับชื่อที่จองไว้เท่านั้น</div>
+      <div class="fhint">ต้องตรงกับชื่อที่จองไว้</div>
     </div>
+    <button class="btn btn-danger btn-full" onclick="confirmCancelBooking('self')">❌ ยืนยันยกเลิก</button>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin:12px 0;">— หรือให้เจ้าหน้าที่ยกเลิกให้ —</div>
+    <!-- ทางที่ 2: เจ้าหน้าที่ยกเลิกให้ -->
+    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
+    <div class="staff-pick" id="cancelStaffList" style="margin-bottom:10px;"></div>
+    <div class="fg">
+      <label>PIN เจ้าหน้าที่</label>
+      <input type="password" id="cancelStaffPin" placeholder="กรอก PIN" maxlength="6" style="font-size:20px;letter-spacing:8px;text-align:center;"/>
+    </div>
+    <button class="btn btn-danger btn-full" onclick="confirmCancelBooking('staff')">❌ เจ้าหน้าที่ยืนยันยกเลิก</button>
   </div>
   <div class="sheet-foot">
     <button class="btn btn-ghost btn-full" onclick="closeM('mCancel')">ปิด</button>
@@ -544,7 +555,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='18';
+const APP_VERSION='19';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
