@@ -524,7 +524,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='3';
+const APP_VERSION='7';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -1278,8 +1278,14 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
-  // auto refresh ทุก 1 นาที (อัปเดต status)
-  setInterval(()=>{renderStats();renderItems();renderPending();},60000);
+  // auto sync จาก Sheets ทุก 30 วินาที
+  setInterval(async ()=>{
+    if(!cfg.url)return;
+    try{
+      const ir=await fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json());
+      if(Array.isArray(ir)){items=ir;save();render();}
+    }catch(e){}
+  },30000);
 });
 render();
 </script>
