@@ -375,6 +375,27 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 </div>
 </div>
 
+<!-- MODAL: ยกเลิกการจอง -->
+<div class="overlay" id="mCancel" style="display:none" onclick="bgClose(event,'mCancel')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>❌</span><h3>ยกเลิกการจอง</h3><button class="sheet-close" onclick="closeM('mCancel')">×</button></div>
+  <div class="sheet-body">
+    <div class="info-box" id="cancelInfo"></div>
+    <div class="note" style="margin-bottom:12px;">กรอกชื่อที่ใช้จองเพื่อยืนยัน</div>
+    <div class="fg">
+      <label>ชื่อผู้จอง</label>
+      <input type="text" id="cancelName" placeholder="กรอกชื่อที่ใช้จอง"/>
+      <div class="fhint">ต้องตรงกับชื่อที่จองไว้เท่านั้น</div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-danger btn-full" onclick="confirmCancelBooking()">❌ ยืนยันยกเลิกการจอง</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mCancel')">ไม่ยกเลิก</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: รายละเอียดการจอง -->
 <div class="overlay" id="mBookDetail" style="display:none" onclick="bgClose(event,'mBookDetail')">
 <div class="sheet">
@@ -503,7 +524,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='5';
+const APP_VERSION='3';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -549,7 +570,10 @@ const DEFAULT_STAFF=[
 let items=JSON.parse(localStorage.getItem('bt_items')||'null')||DEFAULT_ITEMS;
 let logs=JSON.parse(localStorage.getItem('bt_logs')||'[]');
 let staff=JSON.parse(localStorage.getItem('bt_staff')||'null')||DEFAULT_STAFF;
-let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{"url":""}');
+// ── URL ถาวร — แก้ตรงนี้ถ้าต้องการเปลี่ยน Apps Script ──────────────────
+const FIXED_URL='https://script.google.com/macros/s/AKfycby02F0KseX83Wokg1eqHLVDVZm7TT_N6CAi8ddH6hGdrtN3q9vvAyeyaZUQevVh-FLz0Q/exec';
+let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{}');
+cfg.url=FIXED_URL; // บังคับใช้ URL นี้เสมอ
 save();
 
 let bookMode='item'; // 'item' | 'room'
@@ -634,7 +658,8 @@ function renderItems(){
     const timelineHtml=slots.length?`<div class="timeline-wrap"><div class="timeline-title">ตารางการจอง</div>${slots.map(b=>`
       <div class="booking-slot">
         <div class="slot-bar" style="background:${new Date(b.to)<new Date()?'#aaa':new Date(b.from)<=new Date()?'#f4b942':'#5b2d8e'}"></div>
-        <div class="slot-info"><span class="slot-name">${b.booker}</span> · ${fmtDT(b.from)} – ${fmtDT(b.to)}</div>
+        <div class="slot-info" style="flex:1"><span class="slot-name">${b.booker}</span> · ${fmtDT(b.from)} – ${fmtDT(b.to)}</div>
+        <button class="btn btn-danger btn-sm" style="padding:2px 7px;font-size:10px;" onclick="openCancelBooking('${it.id}','${b.id}')">ยกเลิก</button>
       </div>`).join('')}</div>`:'';
     return`<div class="card ${cls}">
       <div class="card-icon">${it.icon}</div>
@@ -1035,6 +1060,32 @@ function openBookDetail(itemId,bkId){
     <button class="btn btn-danger btn-full" onclick="cancelBooking('${itemId}','${bkId}')">❌ ยกเลิกการจอง</button>
     <button class="btn btn-ghost btn-full" onclick="closeM('mBookDetail')">ปิด</button>`;
   document.getElementById('mBookDetail').style.display='flex';
+}
+
+// ── CANCEL BOOKING (มี PIN) ───────────────────────────────────────────────
+let pCancelItemId=null, pCancelBkId=null, cancelSelStaff=null;
+function openCancelBooking(itemId,bkId){
+  pCancelItemId=itemId; pCancelBkId=bkId;
+  const it=items.find(x=>x.id===itemId);
+  const bk=it?.bookings.find(b=>b.id===bkId);
+  document.getElementById('cancelInfo').innerHTML=`
+    <strong>${it?.icon} ${it?.name}</strong><br>
+    ผู้จอง: <strong>${bk?.booker}</strong><br>
+    ${fmtDT(bk?.from)} – ${fmtDT(bk?.to)}`;
+  document.getElementById('cancelName').value='';
+  document.getElementById('mCancel').style.display='flex';
+}
+function confirmCancelBooking(){
+  const name=document.getElementById('cancelName').value.trim();
+  const it=items.find(x=>x.id===pCancelItemId);
+  const bk=it?.bookings.find(b=>b.id===pCancelBkId);
+  if(!name){alert('กรุณากรอกชื่อ');return;}
+  if(name!==bk?.booker){alert('ชื่อไม่ตรงกับผู้จอง กรุณาตรวจสอบอีกครั้ง');return;}
+  bk.cancelled=true;
+  logs.push({ts:nowStr(),type:'cancel',detail:`${name} ยกเลิกการจอง ${it?.name}`,staff:''});
+  save();render();renderBookings();closeM('mCancel');
+  showToast('✅ ยกเลิกการจองแล้ว');
+  push({action:'cancelBooking',itemId:pCancelItemId,bookingId:pCancelBkId});
 }
 
 function cancelBooking(itemId,bkId){
