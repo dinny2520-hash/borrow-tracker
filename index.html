@@ -524,7 +524,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='9';
+const APP_VERSION='10';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -905,6 +905,8 @@ function openBooking(mode,preSelectId){
 }
 
 function refreshItemCheckboxes(preSelectId){
+  // เก็บรายการที่ติ๊กไว้ก่อน rebuild
+  const prevChecked=[...document.querySelectorAll('#bkItemList input:checked')].map(cb=>cb.value);
   const myItems=items.filter(i=>i.type==='item');
   document.getElementById('bkItemList').innerHTML=myItems.map(it=>{
     const activeBookings=it.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
@@ -918,7 +920,14 @@ function refreshItemCheckboxes(preSelectId){
       </div>
       <span class="cb-status" id="cbst-${it.id}" style="font-size:10px;white-space:nowrap;margin-top:2px;"></span>
     </label>`;}).join('');
-  if(preSelectId&&items.find(x=>x.id===preSelectId&&x.type==='item')){
+  // คืนค่าที่ติ๊กไว้ก่อนหน้า
+  if(prevChecked.length){
+    prevChecked.forEach(id=>{
+      const cb=document.querySelector(`#cbi-${id} input`);
+      if(cb) cb.checked=true;
+    });
+    updateItemCount();
+  } else if(preSelectId&&items.find(x=>x.id===preSelectId&&x.type==='item')){
     setTimeout(()=>{
       const cb=document.querySelector(`#cbi-${preSelectId} input`);
       if(cb){cb.checked=true;updateItemCount();}
@@ -1287,16 +1296,24 @@ window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
   // auto sync จาก Sheets ทุก 30 วินาที
-  // อัปเดตข้อมูลใน background เท่านั้น ไม่ re-render ถ้ามี modal เปิดอยู่
   setInterval(async ()=>{
     if(!cfg.url)return;
     try{
       const ir=await fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json());
       if(!Array.isArray(ir))return;
       items=ir; save();
-      // render เฉพาะตอนที่ไม่มี modal เปิดอยู่
       const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
-      if(!hasOpenModal) render();
+      if(hasOpenModal){
+        // ถ้า modal เปิดอยู่ → แค่อัปเดต bookingInfo ใน checkbox โดยไม่ reset ค่าที่กรอก
+        items.filter(i=>i.type==='item').forEach(it=>{
+          const infoEl=document.querySelector(`#cbi-${it.id} div[style*="font-size:10px"]`);
+          if(!infoEl)return;
+          const activeBookings=it.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
+          infoEl.innerHTML=activeBookings.map(b=>`📅 ${b.booker}: ${fmtDT(b.from)}–${fmtDT(b.to)}`).join('<br>');
+        });
+      } else {
+        render();
+      }
     }catch(e){}
   },30000);
 });
