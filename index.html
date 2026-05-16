@@ -411,8 +411,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
     </div>
   </div>
   <div class="sheet-foot">
-    <button class="btn btn-danger btn-full" onclick="confirmCancelBooking()">❌ ยืนยันยกเลิกการจอง</button>
-    <button class="btn btn-ghost btn-full" onclick="closeM('mCancel')">ไม่ยกเลิก</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mCancel')">ปิด</button>
   </div>
 </div>
 </div>
@@ -545,7 +544,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='16';
+const APP_VERSION='17';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -1102,8 +1101,9 @@ function openBookDetail(itemId,bkId){
 
 // ── CANCEL BOOKING (มี PIN) ───────────────────────────────────────────────
 let pCancelItemId=null, pCancelBkId=null, cancelSelStaff=null;
+let cancelSelStaff=null;
 function openCancelBooking(itemId,bkId){
-  pCancelItemId=itemId; pCancelBkId=bkId;
+  pCancelItemId=itemId; pCancelBkId=bkId; cancelSelStaff=null;
   const it=items.find(x=>x.id===itemId);
   const bk=it?.bookings.find(b=>b.id===bkId);
   document.getElementById('cancelInfo').innerHTML=`
@@ -1111,16 +1111,38 @@ function openCancelBooking(itemId,bkId){
     ผู้จอง: <strong>${bk?.booker}</strong><br>
     ${fmtDT(bk?.from)} – ${fmtDT(bk?.to)}`;
   document.getElementById('cancelName').value='';
+  document.getElementById('cancelStaffPin').value='';
+  // โหลดรายชื่อเจ้าหน้าที่
+  document.getElementById('cancelStaffList').innerHTML=staff.map(s=>`
+    <div class="sopt" id="csl-${s.id}" onclick="selCancelStaff('${s.id}')">
+      <div class="avatar">${s.name.slice(0,2)}</div>
+      <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
+    </div>`).join('');
   document.getElementById('mCancel').style.display='flex';
 }
-function confirmCancelBooking(){
-  const name=document.getElementById('cancelName').value.trim();
+function selCancelStaff(id){
+  cancelSelStaff=id;
+  document.querySelectorAll('#cancelStaffList .sopt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('csl-'+id)?.classList.add('sel');
+}
+function confirmCancelBooking(mode){
   const it=items.find(x=>x.id===pCancelItemId);
   const bk=it?.bookings.find(b=>b.id===pCancelBkId);
-  if(!name){alert('กรุณากรอกชื่อ');return;}
-  if(name!==bk?.booker){alert('ชื่อไม่ตรงกับผู้จอง กรุณาตรวจสอบอีกครั้ง');return;}
-  bk.cancelled=true;
-  logs.push({ts:nowStr(),type:'cancel',detail:`${name} ยกเลิกการจอง ${it?.name}`,staff:''});
+  if(!it||!bk){alert('ไม่พบข้อมูลการจอง');return;}
+  if(mode==='self'){
+    const name=document.getElementById('cancelName').value.trim();
+    if(!name){alert('กรุณากรอกชื่อ');return;}
+    if(name!==bk.booker){alert('ชื่อไม่ตรงกับผู้จอง\nชื่อที่จอง: '+bk.booker+'\nถ้าจำชื่อไม่ได้ให้ติดต่อเจ้าหน้าที่');return;}
+    bk.cancelled=true;
+    logs.push({ts:nowStr(),type:'cancel',detail:`${name} ยกเลิกการจอง ${it.name}`,staff:''});
+  } else {
+    if(!cancelSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+    const pin=document.getElementById('cancelStaffPin').value;
+    const s=staff.find(x=>x.id===cancelSelStaff);
+    if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
+    bk.cancelled=true;
+    logs.push({ts:nowStr(),type:'cancel',detail:`${s.name} ยกเลิกการจอง ${it.name} ของ ${bk.booker}`,staff:s.name});
+  }
   save();render();renderBookings();closeM('mCancel');
   showToast('✅ ยกเลิกการจองแล้ว');
   push({action:'cancelBooking',itemId:pCancelItemId,bookingId:pCancelBkId});
