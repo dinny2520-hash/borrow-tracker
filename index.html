@@ -187,7 +187,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
   </div>
   <div class="topbar-right">
     <div class="sync-dot" id="syncDot"></div>
-    <button class="btn btn-ghost btn-sm" onclick="syncNow()">🔄</button>
   </div>
 </div>
 
@@ -306,6 +305,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
           <div class="fhint">วาง URL จากขั้น 3</div>
         </div>
         <button class="btn btn-primary btn-full" onclick="saveConfig()">💾 บันทึกและทดสอบ</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="syncNow()">🔄 ซิงก์ข้อมูลจาก Sheets</button>
         <div id="cfgStatus" style="font-size:12px;color:var(--text3);margin-top:8px;text-align:center;"></div>
       </div>
       <div class="setup-card">
@@ -524,7 +524,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='11';
+const APP_VERSION='12';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -1297,20 +1297,16 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
-  // auto sync ทุก 30 วินาที — ไม่ render ถ้า modal เปิดอยู่หรือกำลังพิมพ์
-  setInterval(async ()=>{
-    if(!cfg.url)return;
+  // sync อัตโนมัติเฉพาะตอนกลับมาที่แท็บ/หน้าต่าง (ไม่มี interval เพื่อป้องกันฟอร์มเด้ง)
+  document.addEventListener('visibilitychange',async ()=>{
+    if(document.visibilityState!=='visible'||!cfg.url)return;
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
     if(hasOpenModal)return;
-    const focused=document.activeElement;
-    const isTyping=focused&&(focused.tagName==='INPUT'||focused.tagName==='TEXTAREA');
-    if(isTyping)return;
     try{
       const ir=await fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json());
-      if(!Array.isArray(ir))return;
-      items=ir; save(); render();
+      if(Array.isArray(ir)){items=ir;save();render();}
     }catch(e){}
-  },30000);
+  });
 });
 render();
 </script>
