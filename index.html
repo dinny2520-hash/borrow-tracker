@@ -1342,11 +1342,14 @@ function removeStaff(id){
 
 // ── SETUP PIN ─────────────────────────────────────────────────────────────
 const ADMIN_ID='s1';
+const ADMIN_FALLBACK_PIN='1234'; // PIN สำรองของ admin (บดินทร์)
 function openSetupPin(){document.getElementById('setupPinInput').value='';document.getElementById('mSetupPin').style.display='flex';}
 function verifySetupPin(){
   const pin=document.getElementById('setupPinInput').value;
   const admin=staff.find(x=>x.id===ADMIN_ID);
-  if(!admin||pin!==admin.pin){alert('PIN ไม่ถูกต้อง');return;}
+  // ใช้ PIN จาก Sheets ถ้ามี ไม่งั้นใช้ fallback PIN
+  const correctPin=admin?admin.pin:ADMIN_FALLBACK_PIN;
+  if(pin!==correctPin){alert('PIN ไม่ถูกต้อง');return;}
   closeM('mSetupPin');go('setup');
   document.getElementById('bn-setup').classList.add('active');
 }
