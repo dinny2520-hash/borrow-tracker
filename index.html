@@ -760,9 +760,10 @@ function hasConflict(bookings,fromDT,toDT){
 function getItemStatus(item){
   const now=new Date();
   const active=item.bookings.filter(b=>!b.returned&&!b.cancelled);
+  const pendingRet=active.find(b=>b.pendingReturn);
   const current=active.find(b=>new Date(b.from)<=now&&new Date(b.to)>=now);
   const upcoming=active.filter(b=>new Date(b.from)>now).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
-  return{current,upcoming};
+  return{current,upcoming,pendingRet};
 }
 
 function getPendingReturn(){
@@ -785,9 +786,15 @@ function renderItems(){
   const myItems=items.filter(i=>i.type==='item');
   if(!myItems.length){el.innerHTML='<div class="empty"><div class="empty-ic">📦</div>ยังไม่มีอุปกรณ์</div>';return;}
   el.innerHTML=myItems.map(it=>{
-    const{current,upcoming}=getItemStatus(it);
+    const{current,upcoming,pendingRet}=getItemStatus(it);
     let pill,meta,btn,cls='';
-    if(current){
+    if(pendingRet){
+      pill='<span class="pill pb">🛡️ รอยืนยันการคืน</span>';
+      const ps=staff.find(x=>x.id===pendingRet.pendingStaffId);
+      meta=`<div>ผู้ยืม: ${pendingRet.booker}</div><div>รอ: ${ps?ps.name:'เจ้าหน้าที่'}</div>`;
+      btn=`<button class="btn btn-confirm btn-sm" onclick="openReturnConfirm('${it.id}','${pendingRet.id}')">🛡️ ยืนยัน</button>`;
+      cls='pending';
+    }else if(current){
       pill='<span class="pill pa">📤 ใช้งานอยู่</span>';
       meta=`<div>${current.booker}</div><div>คืน: ${fmtDT(current.to)}</div>`;
       btn=`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}','${current.id}')">↩️ แจ้งคืน</button>`;
@@ -1637,7 +1644,9 @@ window.addEventListener('load',()=>{
         fetch(cfg.url+'?action=getStaff&t='+Date.now()).then(r=>r.json())
       ]);
       if(Array.isArray(ir)&&ir.length>0){
-        items=ir; save(); render();
+        items=ir; save();
+        const hasModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
+        if(!hasModal) render();
         document.getElementById('syncLabel').textContent='เชื่อม Google Sheets';
       }
       if(Array.isArray(sr)&&sr.length>0){
