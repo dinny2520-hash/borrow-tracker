@@ -1585,6 +1585,15 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
+  // โหลด staff จาก items พิเศษ __staff__
+  function loadStaffFromItems(rawItems){
+    const rec=rawItems.find(x=>x.id==='__staff__');
+    if(rec&&rec.bookings&&rec.bookings.length>0){
+      staff=rec.bookings;
+      localStorage.setItem('bt_staff',JSON.stringify(staff));
+    }
+  }
+
   // sync อัตโนมัติ
   async function bgSync(force){
     if(!cfg.url){ console.warn('No URL configured'); return; }
