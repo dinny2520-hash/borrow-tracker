@@ -681,7 +681,7 @@ let items=JSON.parse(localStorage.getItem('bt_items')||'null')||DEFAULT_ITEMS;
 let logs=JSON.parse(localStorage.getItem('bt_logs')||'[]');
 let staff=JSON.parse(localStorage.getItem('bt_staff')||'null')||DEFAULT_STAFF;
 // ── URL ถาวร — แก้ตรงนี้ถ้าต้องการเปลี่ยน Apps Script ──────────────────
-const FIXED_URL='https://script.google.com/macros/s/AKfycbylVQ-zuqctB7I3q-iHdcgEeLpNdsjws7MlEbhagWm5zQ-LoOL1HkOlx8uKPBkO9whyvg/exec';
+const FIXED_URL='https://script.google.com/macros/s/AKfycbyJeaAqYCTXMnFXrcysjxsiLQdoHCXcyvsiUrFl8LeJ8viAftvIek5L-04cjibnQWSUVw/exec';
 let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{}');
 cfg.url=FIXED_URL; // บังคับใช้ URL นี้เสมอ
 save();
