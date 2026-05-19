@@ -618,7 +618,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 
 <script>
 // ── VERSION ───────────────────────────────────────────────────────────────
-const APP_VERSION='20';
+const APP_VERSION='3';
 const savedVersion=localStorage.getItem('bt_version');
 if(savedVersion!==APP_VERSION){
   const savedCfg=localStorage.getItem('bt_cfg');
@@ -680,6 +680,28 @@ function save(){
   localStorage.setItem('bt_logs',JSON.stringify(logs));
   localStorage.setItem('bt_staff',JSON.stringify(staff));
   localStorage.setItem('bt_cfg',JSON.stringify(cfg));
+}
+
+// บันทึก staff ลง Sheets ผ่าน item พิเศษ __staff__
+async function saveStaffToSheets(){
+  if(!cfg.url)return;
+  // เช็คว่ามี __staff__ record อยู่ใน items ไหม
+  const existing=items.find(x=>x.id==='__staff__');
+  if(existing){
+    // อัปเดต bookings field
+    existing.bookings=staff;
+    const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify({action:'updateStaff',staff}))+'&t='+Date.now();
+    try{ await fetch(url); }catch(e){}
+  } else {
+    // สร้างใหม่
+    const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify({action:'addItem',id:'__staff__',name:'__staff__',icon:'',type:'__staff__'}))+'&t='+Date.now();
+    try{ await fetch(url); }catch(e){}
+    // แล้ว update
+    setTimeout(async()=>{
+      const url2=cfg.url+'?data='+encodeURIComponent(JSON.stringify({action:'updateStaff',staff}))+'&t='+Date.now();
+      try{ await fetch(url2); }catch(e){}
+    },1000);
+  }
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -1322,11 +1344,14 @@ function confirmStaffAdd(){
   const pin=document.getElementById('stPin').value.trim();
   if(!name||!pin){alert('กรุณากรอกชื่อและ PIN');return;}
   staff.push({id:'s'+Date.now(),name,role,pin});
-  save();renderStaffCfg();closeM('mStaff');
+  save(); saveStaffToSheets(); renderStaffCfg(); closeM('mStaff');
+  showToast('✅ เพิ่มเจ้าหน้าที่แล้ว');
 }
 function removeStaff(id){
   if(!confirm('ลบเจ้าหน้าที่คนนี้?'))return;
-  staff=staff.filter(s=>s.id!==id);save();renderStaffCfg();
+  staff=staff.filter(s=>s.id!==id);
+  save(); saveStaffToSheets(); renderStaffCfg();
+  showToast('✅ ลบเจ้าหน้าที่แล้ว');
 }
 
 // ── SETUP PIN ─────────────────────────────────────────────────────────────
@@ -1359,7 +1384,10 @@ async function syncNow(){
       fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json()),
       fetch(cfg.url+'?action=getLogs&t='+Date.now()).then(r=>r.json())
     ]);
-    if(Array.isArray(ir)&&ir.length>0) items=ir;
+    if(Array.isArray(ir)&&ir.length>0){
+      loadStaffFromItems(ir);
+      items=ir.filter(x=>x.id!=='__staff__');
+    }
     if(Array.isArray(lr)) logs=lr;
     save();
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
@@ -1567,7 +1595,10 @@ window.addEventListener('load',()=>{
       const res=await fetch(url);
       const ir=await res.json();
       if(Array.isArray(ir)&&ir.length>0){
-        items=ir; save(); render();
+        // แยก staff record ออกก่อน
+        loadStaffFromItems(ir);
+        items=ir.filter(x=>x.id!=='__staff__');
+        save(); render();
         document.getElementById('syncLabel').textContent='เชื่อม Google Sheets';
       }
     }catch(e){ console.warn('bgSync error',e); }
