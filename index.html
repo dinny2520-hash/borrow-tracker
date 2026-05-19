@@ -439,15 +439,31 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 </div>
 
 <!-- MODAL: ยืนยันคืน -->
+<!-- MODAL: คนยืมแจ้งคืน (เลือกเจ้าหน้าที่) -->
+<div class="overlay" id="mReturn" style="display:none" onclick="bgClose(event,'mReturn')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>↩️</span><h3>แจ้งคืนอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mReturn')">×</button></div>
+  <div class="sheet-body">
+    <div class="info-box" id="retInfo"></div>
+    <div class="note" style="margin-bottom:12px;">เลือกเจ้าหน้าที่ที่จะนำของไปคืน</div>
+    <div class="staff-pick" id="retStaffList"></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-amber btn-full" onclick="submitReturn()">📨 ส่งคืน (รอเจ้าหน้าที่ยืนยัน)</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mReturn')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: เจ้าหน้าที่ยืนยันรับคืน (ใส่ PIN) -->
 <div class="overlay" id="mConfirm" style="display:none" onclick="bgClose(event,'mConfirm')">
 <div class="sheet">
   <div class="sheet-handle"><div class="handle-bar"></div></div>
   <div class="sheet-head"><span>🛡️</span><h3>ยืนยันรับคืน</h3><button class="sheet-close" onclick="closeM('mConfirm')">×</button></div>
   <div class="sheet-body">
     <div class="info-box" id="confInfo"></div>
-    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
-    <div class="staff-pick" id="confStaff" style="margin-bottom:12px;"></div>
-    <div class="fg"><label>PIN</label><input type="password" id="confPin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
+    <div class="fg"><label>PIN เจ้าหน้าที่</label><input type="password" id="confPin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
   </div>
   <div class="sheet-foot">
     <button class="btn btn-confirm btn-full" onclick="confirmStaff()">✅ รับคืนเรียบร้อย</button>
@@ -718,7 +734,8 @@ function getPendingReturn(){
   const result=[];
   items.forEach(it=>{
     it.bookings.forEach(bk=>{
-      if(!bk.returned&&!bk.cancelled&&new Date(bk.to)<now){
+      // รอยืนยันจากเจ้าหน้าที่ หรือเกินกำหนดแล้ว
+      if(!bk.returned&&!bk.cancelled&&(bk.pendingReturn||new Date(bk.to)<now)){
         result.push({item:it,bk});
       }
     });
@@ -737,7 +754,7 @@ function renderItems(){
     if(current){
       pill='<span class="pill pa">📤 ใช้งานอยู่</span>';
       meta=`<div>${current.booker}</div><div>คืน: ${fmtDT(current.to)}</div>`;
-      btn=`<button class="btn btn-amber btn-sm" onclick="openReturnConfirm('${it.id}','${current.id}')">↩️ คืน</button>`;
+      btn=`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}','${current.id}')">↩️ แจ้งคืน</button>`;
       cls='active-now';
     }else if(upcoming.length){
       pill=`<span class="pill pp">📅 มีจอง ${upcoming.length} รายการ</span>`;
@@ -851,7 +868,8 @@ function renderBookings(){
       </div>
       <div class="card-action">
         ${!isDone&&!bk.returned?`<button class="btn btn-ghost btn-sm" onclick="openBookDetail('${item.id}','${bk.id}')">รายละเอียด</button>`:''}
-        ${isActive&&!bk.returned?`<button class="btn btn-amber btn-sm" onclick="openReturnConfirm('${item.id}','${bk.id}')">↩️ คืน</button>`:''}
+        ${isActive&&!bk.returned&&!bk.pendingReturn?`<button class="btn btn-amber btn-sm" onclick="openReturn('${item.id}','${bk.id}')">↩️ แจ้งคืน</button>`:
+  isActive&&bk.pendingReturn?`<span class="pill pr">รอเจ้าหน้าที่ยืนยัน</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -873,7 +891,7 @@ function renderPending(){
         <div class="card-meta">ผู้ยืม: ${bk.booker}<br>ครบกำหนด: ${fmtDT(bk.to)}</div>
       </div>
       <div class="card-action">
-        <button class="btn btn-confirm btn-sm" onclick="openReturnConfirm('${item.id}','${bk.id}')">🛡️ ยืนยัน</button>
+        <button class="btn btn-confirm btn-sm" onclick="openReturnConfirm('${item.id}','${bk.id}')">🛡️ ใส่ PIN ยืนยัน</button>
       </div>
     </div>`).join('');
 }
@@ -1412,7 +1430,7 @@ function onScan(text){
     const{current}=getItemStatus(it);
     if(current){
       box.innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ยืมโดย: ${current.booker}<br>คืนภายใน: ${fmtDT(current.to)}<br>
-        <button class="btn btn-amber btn-sm" style="margin-top:8px" onclick="openReturnConfirm('${it.id}','${current.id}');go('items')">↩️ แจ้งคืน</button>`;
+        <button class="btn btn-amber btn-sm" style="margin-top:8px" onclick="openReturn('${it.id}','${current.id}');go('items')">↩️ แจ้งคืน</button>`;
     }else{
       box.innerHTML=`<strong>${it.icon} ${it.name}</strong> — ว่างอยู่<br>
         <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openBooking('item','${it.id}');go('items')">📅 จองอุปกรณ์นี้</button>`;
