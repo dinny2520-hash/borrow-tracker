@@ -688,8 +688,44 @@ save();
 
 let bookMode='item'; // 'item' | 'room'
 let pConfirmItemId=null,pConfirmBkId=null,confSelStaff=null;
+let pReturnItemId=null,pReturnBkId=null,retSelStaff=null;
 let pDeleteId=null,delSelStaff=null,pinAddSelStaff=null;
 let scanner=null;
+
+// ── STEP 1: คนยืมแจ้งคืน ─────────────────────────────────────────────────
+function openReturn(itemId,bkId){
+  pReturnItemId=itemId; pReturnBkId=bkId; retSelStaff=null;
+  var it=items.find(function(x){return x.id===itemId;});
+  var bk=it?it.bookings.find(function(b){return b.id===bkId;}):null;
+  document.getElementById('retInfo').innerHTML=
+    (it?it.icon:'')+'<strong> '+(it?it.name:'')+'</strong><br>ผู้ยืม: <strong>'+(bk?bk.booker:'')+'</strong><br>กำหนดคืน: '+fmtDT(bk?bk.to:'');
+  var html='';
+  staff.forEach(function(s){
+    html+='<div class="sopt" id="rs-'+s.id+'" onclick="selRetStaff(this,&quot;'+s.id+'&quot;)">'+
+      '<div class="avatar">'+s.name.slice(0,2)+'</div>'+
+      '<div><div class="sopt-name">'+s.name+'</div><div class="sopt-role">'+s.role+'</div></div></div>';
+  });
+  document.getElementById('retStaffList').innerHTML=html;
+  document.getElementById('mReturn').style.display='flex';
+}
+function selRetStaff(el,id){
+  retSelStaff=id;
+  document.querySelectorAll('#retStaffList .sopt').forEach(function(e){e.classList.remove('sel');});
+  if(el) el.classList.add('sel');
+}
+function submitReturn(){
+  if(!retSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+  var it=items.find(function(x){return x.id===pReturnItemId;});
+  var bk=it?it.bookings.find(function(b){return b.id===pReturnBkId;}):null;
+  if(!bk){alert('ไม่พบข้อมูลการจอง');return;}
+  bk.pendingReturn=true;
+  bk.pendingStaffId=retSelStaff;
+  var s=staff.find(function(x){return x.id===retSelStaff;});
+  logs.push({ts:nowStr(),type:'return_req',detail:bk.booker+' แจ้งคืน '+it.name+' → '+(s?s.name:''),staff:s?s.name:''});
+  save(); render(); closeM('mReturn');
+  showToast('📨 แจ้งคืนแล้ว รอเจ้าหน้าที่ยืนยัน');
+  push({action:'requestReturn',itemId:it.id,bookingId:bk.id,booker:bk.booker,staffId:retSelStaff});
+}
 
 function save(){
   localStorage.setItem('bt_items',JSON.stringify(items));
