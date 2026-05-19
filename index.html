@@ -1298,21 +1298,18 @@ function cancelBooking(itemId,bkId){
 
 // ── RETURN ────────────────────────────────────────────────────────────────
 function openReturnConfirm(itemId,bkId){
-  pConfirmItemId=itemId;pConfirmBkId=bkId;confSelStaff=null;
+  pConfirmItemId=itemId; pConfirmBkId=bkId;
   const it=items.find(x=>x.id===itemId);
   const bk=it?.bookings.find(b=>b.id===bkId);
-  document.getElementById('confInfo').innerHTML=`<strong>${it?.icon} ${it?.name}</strong><br>ผู้ยืม: ${bk?.booker}<br>กำหนดคืน: ${fmtDT(bk?.to)}`;
-  document.getElementById('confStaff').innerHTML=staff.map(s=>`
-    <div class="sopt" id="cs-${s.id}" onclick="selConfStaff('${s.id}')">
-      <div class="avatar">${s.name.slice(0,2)}</div>
-      <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
-    </div>`).join('');
+  const s=staff.find(x=>x.id===bk?.pendingStaffId);
+  document.getElementById('confInfo').innerHTML=
+    `<strong>${it?.icon} ${it?.name}</strong><br>ผู้ยืม: <strong>${bk?.booker}</strong><br>`+
+    (s?`เจ้าหน้าที่: <strong>${s.name}</strong><br>`:'')+ 
+    `กำหนดคืน: ${fmtDT(bk?.to)}`;
   document.getElementById('confPin').value='';
   document.getElementById('mConfirm').style.display='flex';
 }
-function selConfStaff(id){confSelStaff=id;document.querySelectorAll('#confStaff .sopt').forEach(el=>el.classList.remove('sel'));document.getElementById('cs-'+id)?.classList.add('sel');}
 function confirmStaff(){
-  if(!confSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
   const pin=document.getElementById('confPin').value;
   const s=staff.find(x=>x.id===confSelStaff);
   if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
