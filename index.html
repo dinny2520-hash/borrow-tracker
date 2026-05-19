@@ -665,7 +665,7 @@ let items=JSON.parse(localStorage.getItem('bt_items')||'null')||DEFAULT_ITEMS;
 let logs=JSON.parse(localStorage.getItem('bt_logs')||'[]');
 let staff=JSON.parse(localStorage.getItem('bt_staff')||'null')||DEFAULT_STAFF;
 // ── URL ถาวร — แก้ตรงนี้ถ้าต้องการเปลี่ยน Apps Script ──────────────────
-const FIXED_URL='https://script.google.com/macros/s/AKfycbzydmS1IJCR1BwIAbQuK7tLOSjXIlsiv0loX69MgfAR16mlAFtqIBohxRqXJWQk3gAwPw/exec';
+const FIXED_URL='https://script.google.com/macros/s/AKfycbylVQ-zuqctB7I3q-iHdcgEeLpNdsjws7MlEbhagWm5zQ-LoOL1HkOlx8uKPBkO9whyvg/exec';
 let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{}');
 cfg.url=FIXED_URL; // บังคับใช้ URL นี้เสมอ
 save();
@@ -682,27 +682,8 @@ function save(){
   localStorage.setItem('bt_cfg',JSON.stringify(cfg));
 }
 
-// บันทึก staff ลง Sheets ผ่าน item พิเศษ __staff__
-async function saveStaffToSheets(){
-  if(!cfg.url)return;
-  // เช็คว่ามี __staff__ record อยู่ใน items ไหม
-  const existing=items.find(x=>x.id==='__staff__');
-  if(existing){
-    // อัปเดต bookings field
-    existing.bookings=staff;
-    const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify({action:'updateStaff',staff}))+'&t='+Date.now();
-    try{ await fetch(url); }catch(e){}
-  } else {
-    // สร้างใหม่
-    const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify({action:'addItem',id:'__staff__',name:'__staff__',icon:'',type:'__staff__'}))+'&t='+Date.now();
-    try{ await fetch(url); }catch(e){}
-    // แล้ว update
-    setTimeout(async()=>{
-      const url2=cfg.url+'?data='+encodeURIComponent(JSON.stringify({action:'updateStaff',staff}))+'&t='+Date.now();
-      try{ await fetch(url2); }catch(e){}
-    },1000);
-  }
-}
+// ไม่ใช้แล้ว — แต่ละ action จัดการแยก
+async function saveStaffToSheets(){ }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
 function nowStr(){return new Date().toLocaleString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
@@ -1343,15 +1324,20 @@ function confirmStaffAdd(){
   const role=document.getElementById('stRole').value.trim();
   const pin=document.getElementById('stPin').value.trim();
   if(!name||!pin){alert('กรุณากรอกชื่อและ PIN');return;}
-  staff.push({id:'s'+Date.now(),name,role,pin});
-  save(); saveStaffToSheets(); renderStaffCfg(); closeM('mStaff');
+  const s={id:'s'+Date.now(),name,role,pin};
+  staff.push(s);
+  localStorage.setItem('bt_staff',JSON.stringify(staff));
+  renderStaffCfg(); closeM('mStaff');
   showToast('✅ เพิ่มเจ้าหน้าที่แล้ว');
+  push({action:'addStaff',staff:s});
 }
 function removeStaff(id){
   if(!confirm('ลบเจ้าหน้าที่คนนี้?'))return;
   staff=staff.filter(s=>s.id!==id);
-  save(); saveStaffToSheets(); renderStaffCfg();
+  localStorage.setItem('bt_staff',JSON.stringify(staff));
+  renderStaffCfg();
   showToast('✅ ลบเจ้าหน้าที่แล้ว');
+  push({action:'deleteStaff',id});
 }
 
 // ── SETUP PIN ─────────────────────────────────────────────────────────────
@@ -1384,10 +1370,7 @@ async function syncNow(){
       fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json()),
       fetch(cfg.url+'?action=getLogs&t='+Date.now()).then(r=>r.json())
     ]);
-    if(Array.isArray(ir)&&ir.length>0){
-      loadStaffFromItems(ir);
-      items=ir.filter(x=>x.id!=='__staff__');
-    }
+    if(Array.isArray(ir)&&ir.length>0) items=ir;
     if(Array.isArray(lr)) logs=lr;
     save();
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
@@ -1585,30 +1568,25 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 window.addEventListener('load',()=>{
   const p=new URLSearchParams(location.search).get('scan');
   if(p){go('scan');setTimeout(()=>onScan(location.href),400);}
-  // โหลด staff จาก items พิเศษ __staff__
-  function loadStaffFromItems(rawItems){
-    const rec=rawItems.find(x=>x.id==='__staff__');
-    if(rec&&rec.bookings&&rec.bookings.length>0){
-      staff=rec.bookings;
-      localStorage.setItem('bt_staff',JSON.stringify(staff));
-    }
-  }
-
   // sync อัตโนมัติ
   async function bgSync(force){
     if(!cfg.url){ console.warn('No URL configured'); return; }
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
     if(!force && hasOpenModal) return;
     try{
-      const url=cfg.url+'?action=getItems&t='+Date.now();
-      const res=await fetch(url);
-      const ir=await res.json();
+      // ดึง items และ staff พร้อมกัน
+      const [ir, sr] = await Promise.all([
+        fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json()),
+        fetch(cfg.url+'?action=getStaff&t='+Date.now()).then(r=>r.json())
+      ]);
       if(Array.isArray(ir)&&ir.length>0){
-        // แยก staff record ออกก่อน
-        loadStaffFromItems(ir);
-        items=ir.filter(x=>x.id!=='__staff__');
-        save(); render();
+        items=ir; save(); render();
         document.getElementById('syncLabel').textContent='เชื่อม Google Sheets';
+      }
+      if(Array.isArray(sr)&&sr.length>0){
+        staff=sr;
+        localStorage.setItem('bt_staff',JSON.stringify(staff));
+        renderStaffCfg();
       }
     }catch(e){ console.warn('bgSync error',e); }
   }
