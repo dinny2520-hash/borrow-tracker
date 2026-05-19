@@ -911,8 +911,11 @@ function renderBookings(){
       </div>
       <div class="card-action">
         ${!isDone&&!bk.returned?`<button class="btn btn-ghost btn-sm" onclick="openBookDetail('${item.id}','${bk.id}')">รายละเอียด</button>`:''}
-        ${isActive&&!bk.returned&&!bk.pendingReturn?`<button class="btn btn-amber btn-sm" onclick="openReturn('${item.id}','${bk.id}')">↩️ แจ้งคืน</button>`:
-  isActive&&bk.pendingReturn?`<span class="pill pr">รอเจ้าหน้าที่ยืนยัน</span>`:''}
+        ${item.type==='room'
+          ? (!isDone&&!bk.returned?`<button class="btn btn-danger btn-sm" onclick="closeM('mBookDetail');openCancelBooking('${item.id}','${bk.id}')">❌ ยกเลิกการจอง</button>`:'')
+          : (isActive&&!bk.returned&&!bk.pendingReturn?`<button class="btn btn-amber btn-sm" onclick="openReturn('${item.id}','${bk.id}')">↩️ แจ้งคืน</button>`:
+             isActive&&bk.pendingReturn?`<span class="pill pr">รอเจ้าหน้าที่ยืนยัน</span>`:'')
+        }
       </div>
     </div>`;
   }).join('');
@@ -1233,7 +1236,7 @@ function openBookDetail(itemId,bkId){
       ${bk.itemNames&&bk.itemNames.length?'อุปกรณ์: '+bk.itemNames.join(', ')+'<br>':''}
     </div>`;
   document.getElementById('bookDetailFoot').innerHTML=`
-    <button class="btn btn-danger btn-full" onclick="cancelBooking('${itemId}','${bkId}')">❌ ยกเลิกการจอง</button>
+    <button class="btn btn-danger btn-full" onclick="closeM('mBookDetail');openCancelBooking('${itemId}','${bkId}')">❌ ยกเลิกการจอง</button>
     <button class="btn btn-ghost btn-full" onclick="closeM('mBookDetail')">ปิด</button>`;
   document.getElementById('mBookDetail').style.display='flex';
 }
