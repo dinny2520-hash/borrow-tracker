@@ -1311,14 +1311,19 @@ function openReturnConfirm(itemId,bkId){
 }
 function confirmStaff(){
   const pin=document.getElementById('confPin').value;
-  const s=staff.find(x=>x.id===confSelStaff);
-  if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
   const it=items.find(x=>x.id===pConfirmItemId);
-  const bk=it?.bookings.find(b=>b.id===pConfirmBkId);
-  if(bk){bk.returned=true;}
-  logs.push({ts:nowStr(),type:'return',detail:`${bk?.booker} คืน ${it?.name}`,staff:s.name});
-  save();render();closeM('mConfirm');
-  push({action:'confirmReturn',itemId:pConfirmItemId,bookingId:pConfirmBkId,booker:bk?.booker,staffId:s.id});
+  const bk=it&&it.bookings.find(b=>b.id===pConfirmBkId);
+  if(!it||!bk){alert('ไม่พบข้อมูล');return;}
+  // ดึง staff จาก pendingStaffId ที่บันทึกไว้ตอนแจ้งคืน
+  const s=staff.find(x=>x.id===bk.pendingStaffId);
+  if(!s){alert('ไม่พบข้อมูลเจ้าหน้าที่ กรุณา sync ข้อมูลใหม่');return;}
+  if(pin!==s.pin){alert('PIN ไม่ถูกต้อง\nเจ้าหน้าที่ที่รับคืน: '+s.name);return;}
+  const borrower=bk.booker;
+  logs.push({ts:nowStr(),type:'return',detail:`${borrower} คืน ${it.name}`,staff:s.name});
+  bk.returned=true; bk.pendingReturn=false; bk.pendingStaffId='';
+  save(); render(); closeM('mConfirm');
+  showToast('✅ รับคืนเรียบร้อย');
+  push({action:'confirmReturn',itemId:pConfirmItemId,bookingId:pConfirmBkId,booker:borrower,staffId:s.id});
 }
 
 // ── ADD/DELETE ITEM ───────────────────────────────────────────────────────
