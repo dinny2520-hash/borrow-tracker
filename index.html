@@ -1209,7 +1209,7 @@ function checkDateConflicts(){
   let roomConflicts=[];
   document.querySelectorAll('#bkRoomList input:checked').forEach(cb=>{
     const rm=items.find(x=>x.id===cb.value);
-    if(rm&&hasConflict(rm.bookings,fromDT,toDT)){
+    if(rm&&hasConflict(rm.bookings,fromDT,toDT,rm.type)){
       roomConflicts.push(rm.name);
       cb.checked=false;
     }
