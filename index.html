@@ -791,15 +791,14 @@ function hasConflict(bookings,fromDT,toDT){
 // ── BOOKING STATUS ────────────────────────────────────────────────────────
 function getItemStatus(item){
   const now=new Date();
+  // สำหรับห้อง: ถือว่า booking ที่เลยเวลาแล้วเป็น "คืนแล้ว" โดยไม่ต้อง mark returned
   const active=item.bookings.filter(b=>{
     if(b.returned||b.cancelled) return false;
-    // ห้องประชุม: ครบเวลา = ว่างอัตโนมัติ
-    if(item.type==='room'&&b.to&&new Date(b.to)<now) return false;
+    if(item.type==='room'&&new Date(b.to)<now) return false; // ห้องครบเวลา = ว่างอัตโนมัติ
     return true;
   });
   const pendingRet=active.find(b=>b.pendingReturn);
-  // item ที่ไม่มี to (พ่วงห้อง) ถือว่า current ตลอดจนกว่าจะคืน
-  const current=active.find(b=>new Date(b.from)<=now&&(!b.to||new Date(b.to)>=now));
+  const current=active.find(b=>new Date(b.from)<=now&&new Date(b.to)>=now);
   const upcoming=active.filter(b=>new Date(b.from)>now).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
   return{current,upcoming,pendingRet};
 }
@@ -879,8 +878,7 @@ function renderRooms(){
   el.innerHTML=myRooms.map(rm=>{
     const now=new Date();
     const active=rm.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
-    // item ที่ไม่มี to (พ่วงห้อง) ถือว่า current ตลอดจนกว่าจะคืน
-  const current=active.find(b=>new Date(b.from)<=now&&(!b.to||new Date(b.to)>=now));
+    const current=active.find(b=>new Date(b.from)<=now&&new Date(b.to)>=now);
     const upcoming=active.filter(b=>new Date(b.from)>now);
     let headerPill=current?'<span class="pill pa">🔴 ใช้งานอยู่</span>':
                    upcoming.length?'<span class="pill pp">📅 มีการจอง</span>':
@@ -1246,17 +1244,15 @@ function confirmBooking(){
   const bkId=uid();
   const booking={id:bkId,booker:name,from:fromDT,to:toDT,purpose,itemNames,returned:false,cancelled:false};
 
-  // เพิ่ม booking ให้ทุก item ที่เลือก — ไม่มีเวลาสิ้นสุด (ต้องกดคืนเอง)
+  // เพิ่ม booking ให้ทุก item ที่เลือก — ใช้ id แยกต่างหาก
   checkedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
     if(it){
-      const itemBkId=uid();
-      // ถ้าพ่วงกับห้อง ไม่มี to (ต้องกดคืนเอง) ถ้าจองอุปกรณ์อย่างเดียวมี to ตามปกติ
-      const itemTo=checkedRooms.length>0?'':toDT;
-      it.bookings.push({...booking,id:itemBkId,to:itemTo,itemNames:[]});
+      const itemBkId=uid(); // id ใหม่สำหรับ item booking
+      it.bookings.push({...booking,id:itemBkId,itemNames:[]});
     }
   });
-  // เพิ่ม booking ให้ห้อง — มีเวลาสิ้นสุดตามปกติ
+  // เพิ่ม booking ให้ห้อง — ใช้ bkId เดิม
   checkedRooms.forEach(id=>{
     const rm=items.find(x=>x.id===id);
     if(rm)rm.bookings.push({...booking});
@@ -1269,11 +1265,11 @@ function confirmBooking(){
   // push to Sheets — ใช้ booking id ที่บันทึกไว้จริงๆ ในแต่ละ item
   checkedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
-    const latestBk=it&&it.bookings[it.bookings.length-1];
-    if(latestBk) push({action:'addBooking',itemId:id,booking:Object.assign({},latestBk)});
+    const latestBk=it?.bookings[it.bookings.length-1];
+    if(latestBk) push({action:'addBooking',itemId:id,booking:{...latestBk}});
   });
   checkedRooms.forEach(id=>{
-    push({action:'addBooking',itemId:id,booking:Object.assign({},booking,{itemNames:itemNames})});
+    push({action:'addBooking',itemId:id,booking:{...booking,itemNames}});
   });
 }
 
