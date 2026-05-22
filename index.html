@@ -879,9 +879,9 @@ function renderRooms(){
   const myRooms=items.filter(i=>i.type==='room');
   el.innerHTML=myRooms.map(rm=>{
     const now=new Date();
-    const active=rm.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
-    // item ที่ไม่มี to (พ่วงห้อง) ถือว่า current ตลอดจนกว่าจะคืน
-  const current=active.find(b=>new Date(b.from)<=now&&(!b.to||new Date(b.to)>=now));
+    // กรองเฉพาะ booking ที่ยังไม่เกินเวลา (ห้องครบเวลา = ว่างอัตโนมัติ)
+    const active=rm.bookings.filter(b=>!b.returned&&!b.cancelled&&new Date(b.to)>=now).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
+    const current=active.find(b=>new Date(b.from)<=now&&new Date(b.to)>=now);
     const upcoming=active.filter(b=>new Date(b.from)>now);
     let headerPill=current?'<span class="pill pa">🔴 ใช้งานอยู่</span>':
                    upcoming.length?'<span class="pill pp">📅 มีการจอง</span>':
