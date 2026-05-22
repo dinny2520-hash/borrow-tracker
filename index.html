@@ -779,11 +779,15 @@ function uid(){return'bk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 
 // ── CONFLICT CHECK ────────────────────────────────────────────────────────
 // คืนค่า true ถ้าช่วงเวลาชนกัน
-function hasConflict(bookings,fromDT,toDT){
-  const from=new Date(fromDT),to=new Date(toDT);
-  return bookings.filter(b=>!b.returned&&!b.cancelled).some(b=>{
-    const bf=new Date(b.from),bt=new Date(b.to);
-    // ทับกันถ้า from < bt AND to > bf
+function hasConflict(bookings,fromDT,toDT,itemType){
+  const from=new Date(fromDT),to=new Date(toDT),now=new Date();
+  return bookings.filter(b=>{
+    if(b.returned||b.cancelled) return false;
+    // ห้องประชุม: booking ที่เลยเวลาแล้วไม่นับ
+    if(itemType==='room'&&new Date(b.to)<now) return false;
+    return true;
+  }).some(b=>{
+    const bf=new Date(b.from),bt=b.to?new Date(b.to):new Date('9999-12-31');
     return from<bt && to>bf;
   });
 }
@@ -1086,7 +1090,8 @@ function openBooking(mode,preSelectId){
     // render ห้อง
     const rooms=items.filter(i=>i.type==='room');
     document.getElementById('bkRoomList').innerHTML=rooms.map(r=>{
-      const activeBookings=r.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
+      const now_=new Date();
+      const activeBookings=r.bookings.filter(b=>!b.returned&&!b.cancelled&&new Date(b.to)>=now_).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
       const bookingInfo=activeBookings.length?`<div style="font-size:10px;color:var(--text3);margin-top:2px;line-height:1.5">${activeBookings.map(b=>`📅 ${b.booker}: ${fmtDT(b.from)}–${fmtDT(b.to)}`).join('<br>')}</div>`:'';
       return`<label class="cb-item" id="cbr-${r.id}" style="align-items:flex-start;">
         <input type="checkbox" name="bkRoom" value="${r.id}" onchange="onRoomCheck()" style="margin-top:3px;"/>
@@ -1179,7 +1184,7 @@ function checkDateConflicts(){
   let itemConflicts=[];
   document.querySelectorAll('#bkItemList input:checked').forEach(cb=>{
     const it=items.find(x=>x.id===cb.value);
-    if(it&&hasConflict(it.bookings,fromDT,toDT)){
+    if(it&&hasConflict(it.bookings,fromDT,toDT,it.type)){
       itemConflicts.push(it.name);
       cb.closest('.cb-item').classList.add('disabled');
       cb.checked=false;
@@ -1190,7 +1195,7 @@ function checkDateConflicts(){
   items.filter(i=>i.type==='item').forEach(it=>{
     const st=document.getElementById('cbst-'+it.id);
     if(!st)return;
-    if(hasConflict(it.bookings,fromDT,toDT)){
+    if(hasConflict(it.bookings,fromDT,toDT,it.type)){
       st.textContent='ติดการจอง';st.style.color='var(--red)';
       const cb=document.querySelector(`#cbi-${it.id} input`);
       if(cb){cb.disabled=true;cb.closest('.cb-item').classList.add('disabled');}
@@ -1238,7 +1243,7 @@ function confirmBooking(){
   const allTarget=[...checkedItems,...checkedRooms];
   for(const id of allTarget){
     const it=items.find(x=>x.id===id);
-    if(it&&hasConflict(it.bookings,fromDT,toDT)){
+    if(it&&hasConflict(it.bookings,fromDT,toDT,it.type)){
       alert(`❌ มีผู้จองช่วงเวลานี้แล้ว\n"${it.name}" ไม่สามารถจองได้ กรุณาเลือกช่วงเวลาอื่น`);return;
     }
   }
