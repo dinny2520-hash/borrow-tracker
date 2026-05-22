@@ -791,15 +791,17 @@ function hasConflict(bookings,fromDT,toDT){
 // ── BOOKING STATUS ────────────────────────────────────────────────────────
 function getItemStatus(item){
   const now=new Date();
-  const active=item.bookings.filter(b=>{
-    if(b.returned||b.cancelled) return false;
-    // ห้องประชุม: ครบเวลา = ว่างอัตโนมัติ
-    if(item.type==='room'&&b.to&&new Date(b.to)<now) return false;
-    return true;
-  });
+  const active=item.bookings.filter(b=>!b.returned&&!b.cancelled);
   const pendingRet=active.find(b=>b.pendingReturn);
-  // item ที่ไม่มี to (พ่วงห้อง) ถือว่า current ตลอดจนกว่าจะคืน
-  const current=active.find(b=>new Date(b.from)<=now&&(!b.to||new Date(b.to)>=now));
+  // ห้องประชุม: เช็คเวลาตรงๆ ไม่ต้อง mark returned
+  // อุปกรณ์: ถ้าไม่มี to (พ่วงห้อง) ถือว่ายังใช้งานอยู่จนกว่าจะคืนเอง
+  const current=active.find(b=>{
+    const from=new Date(b.from);
+    const to=b.to?new Date(b.to):null;
+    if(from>now) return false; // ยังไม่ถึงเวลา
+    if(item.type==='room') return to&&to>=now; // ห้อง: ต้องมี to และยังไม่เลยเวลา
+    return !to||to>=now; // อุปกรณ์: ถ้าไม่มี to ถือว่ายังใช้งาน
+  });
   const upcoming=active.filter(b=>new Date(b.from)>now).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
   return{current,upcoming,pendingRet};
 }
@@ -810,10 +812,9 @@ function getPendingReturn(){
   items.forEach(it=>{
     it.bookings.forEach(bk=>{
       if(bk.returned||bk.cancelled) return;
-      // ห้องประชุม: ครบเวลาแล้วถือว่าคืนอัตโนมัติ ไม่ต้องแสดงใน pending
-      if(it.type==='room'&&!bk.pendingReturn&&new Date(bk.to)<now) return;
-      // อุปกรณ์: แสดงถ้า pendingReturn หรือเกินกำหนด
-      if(bk.pendingReturn||new Date(bk.to)<now){
+      if(it.type==='room') return; // ห้องไม่ต้องอยู่ใน pending คืนอัตโนมัติ
+      // อุปกรณ์: แสดงถ้า pendingReturn หรือเกินกำหนด (มี to และเลยเวลา)
+      if(bk.pendingReturn||(bk.to&&new Date(bk.to)<now)){
         result.push({item:it,bk});
       }
     });
