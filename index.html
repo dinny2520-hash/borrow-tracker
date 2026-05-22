@@ -1246,12 +1246,15 @@ function confirmBooking(){
   const bkId=uid();
   const booking={id:bkId,booker:name,from:fromDT,to:toDT,purpose,itemNames,returned:false,cancelled:false};
 
-  // เพิ่ม booking ให้ทุก item ที่เลือก
+  // เพิ่ม booking ให้ทุก item ที่เลือก — ใช้ id แยกต่างหาก
   checkedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
-    if(it)it.bookings.push({...booking,itemNames:[]});
+    if(it){
+      const itemBkId=uid(); // id ใหม่สำหรับ item booking
+      it.bookings.push({...booking,id:itemBkId,itemNames:[]});
+    }
   });
-  // เพิ่ม booking ให้ห้อง พ่วง itemNames
+  // เพิ่ม booking ให้ห้อง — ใช้ bkId เดิม
   checkedRooms.forEach(id=>{
     const rm=items.find(x=>x.id===id);
     if(rm)rm.bookings.push({...booking});
@@ -1261,10 +1264,14 @@ function confirmBooking(){
   logs.push({ts:nowStr(),type:'booking',detail:`${name} จอง ${targets.join(', ')} ${fmtDT(fromDT)} – ${fmtDT(toDT)}${purpose?' ('+purpose+')':''}`,staff:''});
   save();render();closeM('mBook');
   showToast('✅ จองสำเร็จ!');
-  // push to Sheets
-  allTarget.forEach(id=>{
+  // push to Sheets — ใช้ booking id ที่บันทึกไว้จริงๆ ในแต่ละ item
+  checkedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
-    push({action:'addBooking',itemId:id,booking:{...booking,itemNames:id.startsWith('room_')?itemNames:[]}});
+    const latestBk=it?.bookings[it.bookings.length-1];
+    if(latestBk) push({action:'addBooking',itemId:id,booking:{...latestBk}});
+  });
+  checkedRooms.forEach(id=>{
+    push({action:'addBooking',itemId:id,booking:{...booking,itemNames}});
   });
 }
 
