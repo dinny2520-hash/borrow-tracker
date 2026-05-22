@@ -875,12 +875,18 @@ function renderRooms(){
     let headerPill=current?'<span class="pill pa">🔴 ใช้งานอยู่</span>':
                    upcoming.length?'<span class="pill pp">📅 มีการจอง</span>':
                    '<span class="pill pg">✅ ว่าง</span>';
-    // กรองออกถ้าเลยเวลาแล้ว (คืนสถานะว่างอัตโนมัติ)
+    // กรองออกถ้าเลยเวลาแล้ว (คืนสถานะห้องอัตโนมัติ แต่ไม่แตะอุปกรณ์)
     const validBookings=active.filter(b=>new Date(b.to)>=now);
     const expiredBookings=active.filter(b=>new Date(b.to)<now);
-    // mark expired as returned อัตโนมัติ
-    expiredBookings.forEach(b=>{ b.returned=true; });
-    if(expiredBookings.length) save();
+    // mark expired room bookings เป็น returned อัตโนมัติ
+    if(expiredBookings.length){
+      expiredBookings.forEach(b=>{
+        b.returned=true;
+        // push ไป Sheets เฉพาะ room booking — ไม่แตะ item bookings
+        push({action:'confirmReturn',itemId:rm.id,bookingId:b.id,booker:b.booker,staffId:'auto'});
+      });
+      save();
+    }
     const slots=validBookings.map(b=>`
       <div class="rslot">
         <div class="rslot-dot" style="background:${new Date(b.from)<=now?'#f4b942':'#5b2d8e'}"></div>
