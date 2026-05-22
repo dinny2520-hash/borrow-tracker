@@ -887,7 +887,7 @@ function renderRooms(){
         <div class="rslot-info" style="flex:1">
           <span class="slot-name">${b.booker}</span>${b.purpose?' · '+b.purpose:''}<br>
           <span style="color:var(--text3)">${fmtDT(b.from)} – ${fmtDT(b.to)}</span>
-          ${b.itemNames&&b.itemNames.length?'<br><span style="color:var(--purple)">📦 '+b.itemNames.join(', ')+'</span>':''}
+          ${b.itemNames&&b.itemNames.length?'<br><span style="color:var(--purple)">📦 '+b.itemNames.join(', ')+'</span>':'<br><span style="color:var(--text3)">ไม่ได้ยืมอุปกรณ์</span>'}
         </div>
         <button class="btn btn-danger btn-sm" style="padding:2px 7px;font-size:10px;flex-shrink:0;" onclick="openCancelBooking('${rm.id}','${b.id}')">ยกเลิก</button>
       </div>`).join('');
@@ -1221,7 +1221,11 @@ function confirmBooking(){
   const noItem=document.getElementById('bkNoItem').checked;
   if(bookMode==='room'&&!checkedRooms.length){alert('กรุณาเลือกห้องประชุมอย่างน้อย 1 ห้อง');return;}
   if(bookMode==='item'&&!checkedItems.length){alert('กรุณาเลือกอุปกรณ์อย่างน้อย 1 รายการ');return;}
-  if(bookMode==='room'&&!noItem&&!checkedItems.length&&!confirm('ยืนยันจองห้องโดยไม่พ่วงอุปกรณ์?'))return;
+  // บังคับติ๊ก "ไม่ยืมอุปกรณ์" ถ้าไม่ได้เลือกอุปกรณ์
+  if(bookMode==='room'&&!checkedItems.length&&!noItem){
+    alert('⚠️ กรุณาเลือกอุปกรณ์ที่ต้องการยืม\nหรือติ๊ก "ไม่ยืมอุปกรณ์" ถ้าไม่ต้องการ');
+    return;
+  }
 
   // ตรวจสอบ conflict อีกครั้งก่อน confirm — block จริง
   const allTarget=[...checkedItems,...checkedRooms];
