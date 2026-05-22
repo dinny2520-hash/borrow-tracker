@@ -161,6 +161,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
 .empty{text-align:center;padding:36px 18px;color:var(--text3);font-size:13px;}
 .empty-ic{font-size:34px;margin-bottom:7px;}
 @media print{.topbar,.bottom-nav,.sec-head,.stats{display:none!important;}.qr-grid{grid-template-columns:repeat(3,1fr);}}
+.inapp-warn{
+  background:#fff3cd;border:1px solid #ffc107;
+  border-radius:var(--r);padding:10px 14px;
+  font-size:13px;color:#856404;
+  display:none;margin:10px 12px 0;
+  line-height:1.6;
+}
+.inapp-warn strong{display:block;margin-bottom:4px;}
 /* ทำให้ date/time input ทำงานได้ดีบน mobile */
 input[type=date],input[type=time]{
   -webkit-appearance:none;
@@ -205,6 +213,11 @@ input[type=date],input[type=time]{
   </div>
 </div>
 
+<div id="inappWarn" class="inapp-warn">
+  <strong>⚠️ กรุณาเปิดในเบราว์เซอร์ Chrome หรือ Safari</strong>
+  กด <strong>จุด 3 จุด ( ⋮ )</strong> มุมขวาบน → <strong>"เปิดในเบราว์เซอร์"</strong><br>
+  เพื่อให้ใช้งานได้เต็มรูปแบบ
+</div>
 <div class="pages">
   <!-- อุปกรณ์ -->
   <div class="page active" id="p-items">
@@ -369,123 +382,13 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
       <label>วัตถุประสงค์</label>
       <textarea id="bkPurpose" placeholder="เช่น ประชุมทีม HR, อบรมพนักงานใหม่"></textarea>
     </div>
-          <div class="frow">
-        <div class="fg">
-          <label>วันที่เริ่ม</label>
-          <input type="date" id="bkFD" style="font-size:16px;min-height:44px;"/>
-        </div>
-        <div class="fg">
-          <label>เวลาเริ่ม</label>
-          <select id="bkFT" style="font-size:16px;min-height:44px;">
-            <option value="00:00">00:00</option>
-            <option value="00:30">00:30</option>
-            <option value="01:00">01:00</option>
-            <option value="01:30">01:30</option>
-            <option value="02:00">02:00</option>
-            <option value="02:30">02:30</option>
-            <option value="03:00">03:00</option>
-            <option value="03:30">03:30</option>
-            <option value="04:00">04:00</option>
-            <option value="04:30">04:30</option>
-            <option value="05:00">05:00</option>
-            <option value="05:30">05:30</option>
-            <option value="06:00">06:00</option>
-            <option value="06:30">06:30</option>
-            <option value="07:00">07:00</option>
-            <option value="07:30">07:30</option>
-            <option value="08:00" selected>08:00</option>
-            <option value="08:30">08:30</option>
-            <option value="09:00">09:00</option>
-            <option value="09:30">09:30</option>
-            <option value="10:00">10:00</option>
-            <option value="10:30">10:30</option>
-            <option value="11:00">11:00</option>
-            <option value="11:30">11:30</option>
-            <option value="12:00">12:00</option>
-            <option value="12:30">12:30</option>
-            <option value="13:00">13:00</option>
-            <option value="13:30">13:30</option>
-            <option value="14:00">14:00</option>
-            <option value="14:30">14:30</option>
-            <option value="15:00">15:00</option>
-            <option value="15:30">15:30</option>
-            <option value="16:00">16:00</option>
-            <option value="16:30">16:30</option>
-            <option value="17:00">17:00</option>
-            <option value="17:30">17:30</option>
-            <option value="18:00">18:00</option>
-            <option value="18:30">18:30</option>
-            <option value="19:00">19:00</option>
-            <option value="19:30">19:30</option>
-            <option value="20:00">20:00</option>
-            <option value="20:30">20:30</option>
-            <option value="21:00">21:00</option>
-            <option value="21:30">21:30</option>
-            <option value="22:00">22:00</option>
-            <option value="22:30">22:30</option>
-            <option value="23:00">23:00</option>
-            <option value="23:30">23:30</option>
-          </select>
-        </div>
+                <div class="frow">
+        <div class="fg"><label>วันที่เริ่ม</label><input type="date" id="bkFD" style="font-size:16px;min-height:44px;"/></div>
+        <div class="fg"><label>เวลาเริ่ม</label><input type="time" id="bkFT" style="font-size:16px;min-height:44px;"/></div>
       </div>
       <div class="frow">
-        <div class="fg">
-          <label>วันที่สิ้นสุด</label>
-          <input type="date" id="bkTD" style="font-size:16px;min-height:44px;"/>
-        </div>
-        <div class="fg">
-          <label>เวลาสิ้นสุด</label>
-          <select id="bkTT" style="font-size:16px;min-height:44px;">
-            <option value="00:00">00:00</option>
-            <option value="00:30">00:30</option>
-            <option value="01:00">01:00</option>
-            <option value="01:30">01:30</option>
-            <option value="02:00">02:00</option>
-            <option value="02:30">02:30</option>
-            <option value="03:00">03:00</option>
-            <option value="03:30">03:30</option>
-            <option value="04:00">04:00</option>
-            <option value="04:30">04:30</option>
-            <option value="05:00">05:00</option>
-            <option value="05:30">05:30</option>
-            <option value="06:00">06:00</option>
-            <option value="06:30">06:30</option>
-            <option value="07:00">07:00</option>
-            <option value="07:30">07:30</option>
-            <option value="08:00">08:00</option>
-            <option value="08:30">08:30</option>
-            <option value="09:00">09:00</option>
-            <option value="09:30">09:30</option>
-            <option value="10:00">10:00</option>
-            <option value="10:30">10:30</option>
-            <option value="11:00">11:00</option>
-            <option value="11:30">11:30</option>
-            <option value="12:00">12:00</option>
-            <option value="12:30">12:30</option>
-            <option value="13:00">13:00</option>
-            <option value="13:30">13:30</option>
-            <option value="14:00">14:00</option>
-            <option value="14:30">14:30</option>
-            <option value="15:00">15:00</option>
-            <option value="15:30">15:30</option>
-            <option value="16:00">16:00</option>
-            <option value="16:30">16:30</option>
-            <option value="17:00" selected>17:00</option>
-            <option value="17:30">17:30</option>
-            <option value="18:00">18:00</option>
-            <option value="18:30">18:30</option>
-            <option value="19:00">19:00</option>
-            <option value="19:30">19:30</option>
-            <option value="20:00">20:00</option>
-            <option value="20:30">20:30</option>
-            <option value="21:00">21:00</option>
-            <option value="21:30">21:30</option>
-            <option value="22:00">22:00</option>
-            <option value="22:30">22:30</option>
-            <option value="23:00">23:00</option>
-            <option value="23:30">23:30</option>
-          </select>
-        </div>
+        <div class="fg"><label>วันที่สิ้นสุด</label><input type="date" id="bkTD" style="font-size:16px;min-height:44px;"/></div>
+        <div class="fg"><label>เวลาสิ้นสุด</label><input type="time" id="bkTT" style="font-size:16px;min-height:44px;"/></div>
       </div>
     <!-- เลือกห้อง (เฉพาะโหมดห้อง) -->
     <div class="fg" id="bkRoomWrap" style="display:none">
@@ -840,7 +743,18 @@ function submitReturn(){
   bk.pendingStaffId=retSelStaff;
   var s=staff.find(function(x){return x.id===retSelStaff;});
   logs.push({ts:nowStr(),type:'return_req',detail:bk.booker+' แจ้งคืน '+it.name+' → '+(s?s.name:''),staff:s?s.name:''});
-  save(); render(); closeM('mReturn');
+  save(); render();
+
+// ตรวจจับ in-app browser (LINE, Facebook, etc.)
+(function(){
+  var ua=navigator.userAgent||'';
+  var isInApp=ua.indexOf('Line/')>-1||ua.indexOf('FBAN')>-1||ua.indexOf('FBAV')>-1||
+              ua.indexOf('Instagram')>-1||ua.indexOf('Twitter')>-1||
+              (ua.indexOf('wv')>-1&&ua.indexOf('Android')>-1);
+  if(isInApp){
+    document.getElementById('inappWarn').style.display='block';
+  }
+})(); closeM('mReturn');
   showToast('📨 แจ้งคืนแล้ว รอเจ้าหน้าที่ยืนยัน');
   push({action:'requestReturn',itemId:it.id,bookingId:bk.id,booker:bk.booker,staffId:retSelStaff});
 }
