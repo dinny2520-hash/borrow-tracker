@@ -1252,14 +1252,15 @@ function confirmBooking(){
   const bkId=uid();
   const booking={id:bkId,booker:name,from:fromDT,to:toDT,purpose,itemNames,returned:false,cancelled:false};
 
-  // เพิ่ม booking ให้ทุก item ที่เลือก — ไม่มีเวลาสิ้นสุด (ต้องกดคืนเอง)
+  // เพิ่ม booking ให้ทุก item ที่เลือก
   checkedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
     if(it){
       const itemBkId=uid();
-      // ถ้าพ่วงกับห้อง ไม่มี to (ต้องกดคืนเอง) ถ้าจองอุปกรณ์อย่างเดียวมี to ตามปกติ
-      const itemTo=checkedRooms.length>0?'':toDT;
-      it.bookings.push({...booking,id:itemBkId,to:itemTo,itemNames:[]});
+      // พ่วงกับห้อง: มี to ตามห้อง แต่ต้องกดคืนเอง (linkedRoom=true)
+      // ยืมอุปกรณ์อย่างเดียว: มี to ตามปกติ
+      const isLinked=checkedRooms.length>0;
+      it.bookings.push({...booking,id:itemBkId,itemNames:[],linkedRoom:isLinked});
     }
   });
   // เพิ่ม booking ให้ห้อง — มีเวลาสิ้นสุดตามปกติ
