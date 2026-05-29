@@ -804,8 +804,8 @@ function getItemStatus(item){
     const from=new Date(b.from);
     const to=b.to?new Date(b.to):null;
     if(from>now) return false; // ยังไม่ถึงเวลา
-    if(item.type==='room') return to&&to>=now; // ห้อง: ต้องมี to และยังไม่เลยเวลา
-    return !to||to>=now; // อุปกรณ์: ถ้าไม่มี to ถือว่ายังใช้งาน
+    if(item.type==='room') return to&&to>=now; // ห้อง: คืนออโตเมื่อครบเวลา
+    return true; // อุปกรณ์: ถือว่า current เสมอจนกว่าจะกดคืน (แม้เลยเวลาแล้ว)
   });
   const upcoming=active.filter(b=>new Date(b.from)>now).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
   return{current,upcoming,pendingRet};
