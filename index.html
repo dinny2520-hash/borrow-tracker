@@ -796,6 +796,7 @@ function hasConflict(bookings,fromDT,toDT,itemType){
 function getItemStatus(item){
   const now=new Date();
   const active=item.bookings.filter(b=>!b.returned&&!b.cancelled);
+  // หมายเหตุ: active รวม booking ที่เลยเวลาแล้วด้วย (เพื่อให้แสดงสถานะเกินกำหนด)
   const pendingRet=active.find(b=>b.pendingReturn);
   // ห้องประชุม: เช็คเวลาตรงๆ ไม่ต้อง mark returned
   // อุปกรณ์: ถ้าไม่มี to (พ่วงห้อง) ถือว่ายังใช้งานอยู่จนกว่าจะคืนเอง
@@ -841,10 +842,13 @@ function renderItems(){
       btn=`<button class="btn btn-confirm btn-sm" onclick="openReturnConfirm('${it.id}','${pendingRet.id}')">🛡️ ยืนยัน</button>`;
       cls='pending';
     }else if(current){
-      pill='<span class="pill pa">📤 ใช้งานอยู่</span>';
-      meta=`<div>${current.booker}</div><div>คืน: ${fmtDT(current.to)}</div>`;
+      const isOverdue=current.to&&new Date(current.to)<new Date();
+      pill=isOverdue
+        ?'<span class="pill pr"><span class="blink">●</span> เกินกำหนด</span>'
+        :'<span class="pill pa">📤 ใช้งานอยู่</span>';
+      meta=`<div>${current.booker}</div><div>${isOverdue?'ครบกำหนด':'คืน'}: ${fmtDT(current.to)||'—'}</div>`;
       btn=`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}','${current.id}')">↩️ แจ้งคืน</button>`;
-      cls='active-now';
+      cls=isOverdue?'':'active-now';
     }else if(upcoming.length){
       pill=`<span class="pill pp">📅 มีจอง ${upcoming.length} รายการ</span>`;
       meta=`<div>จองถัดไป: ${upcoming[0].booker}</div><div>${fmtDT(upcoming[0].from)}</div>`;
