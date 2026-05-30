@@ -166,9 +166,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
   border-radius:var(--r);padding:10px 14px;
   font-size:13px;color:#856404;
   display:none;margin:10px 12px 0;
-  line-height:1.6;
+  line-height:1.6;position:relative;
 }
 .inapp-warn strong{display:block;margin-bottom:4px;}
+.inapp-warn-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:#856404;line-height:1;}
 /* ทำให้ date/time input ทำงานได้ดีบน mobile */
 input[type=date],input[type=time]{
   -webkit-appearance:none;
@@ -214,9 +215,10 @@ input[type=date],input[type=time]{
 </div>
 
 <div id="inappWarn" class="inapp-warn">
+  <button class="inapp-warn-close" onclick="document.getElementById('inappWarn').style.display='none'">×</button>
   <strong>⚠️ กรุณาเปิดในเบราว์เซอร์ Chrome หรือ Safari</strong>
   กด <strong>จุด 3 จุด ( ⋮ )</strong> มุมขวาบน → <strong>"เปิดในเบราว์เซอร์"</strong><br>
-  เพื่อให้ใช้งานได้เต็มรูปแบบ
+  เพื่อให้ใช้งานได้เต็มรูปแบบ รวมถึงการเลือกวันที่และเวลา
 </div>
 <div class="pages">
   <!-- อุปกรณ์ -->
@@ -745,17 +747,12 @@ function submitReturn(){
   logs.push({ts:nowStr(),type:'return_req',detail:bk.booker+' แจ้งคืน '+it.name+' → '+(s?s.name:''),staff:s?s.name:''});
   save(); render();
 
-// แสดงแจ้งเตือนบนมือถือทุกเครื่อง ให้เปิดใน Chrome/Safari
+// แสดงแจ้งเตือนบนมือถือทุกเครื่อง
 (function(){
   var ua=navigator.userAgent||'';
   var isMobile=/Android|iPhone|iPad|iPod/i.test(ua);
-  // เช็ค standalone (บันทึกเป็นไอคอนแล้ว) ไม่ต้องแจ้งเตือน
   var isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
-  // เช็ค Chrome/Safari จริงๆ (ไม่ใช่ in-app)
-  var isChrome=/Chrome\//.test(ua)&&!/Android.*wv/.test(ua);
-  var isSafari=/Safari\//.test(ua)&&!/Chrome\//.test(ua);
-  var isRealBrowser=isChrome||isSafari;
-  if(isMobile&&!isStandalone&&!isRealBrowser){
+  if(isMobile&&!isStandalone){
     document.getElementById('inappWarn').style.display='block';
   }
 })(); closeM('mReturn');
