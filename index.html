@@ -745,13 +745,17 @@ function submitReturn(){
   logs.push({ts:nowStr(),type:'return_req',detail:bk.booker+' แจ้งคืน '+it.name+' → '+(s?s.name:''),staff:s?s.name:''});
   save(); render();
 
-// ตรวจจับ in-app browser (LINE, Facebook, etc.)
+// แสดงแจ้งเตือนบนมือถือทุกเครื่อง ให้เปิดใน Chrome/Safari
 (function(){
   var ua=navigator.userAgent||'';
-  var isInApp=ua.indexOf('Line/')>-1||ua.indexOf('FBAN')>-1||ua.indexOf('FBAV')>-1||
-              ua.indexOf('Instagram')>-1||ua.indexOf('Twitter')>-1||
-              (ua.indexOf('wv')>-1&&ua.indexOf('Android')>-1);
-  if(isInApp){
+  var isMobile=/Android|iPhone|iPad|iPod/i.test(ua);
+  // เช็ค standalone (บันทึกเป็นไอคอนแล้ว) ไม่ต้องแจ้งเตือน
+  var isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  // เช็ค Chrome/Safari จริงๆ (ไม่ใช่ in-app)
+  var isChrome=/Chrome\//.test(ua)&&!/Android.*wv/.test(ua);
+  var isSafari=/Safari\//.test(ua)&&!/Chrome\//.test(ua);
+  var isRealBrowser=isChrome||isSafari;
+  if(isMobile&&!isStandalone&&!isRealBrowser){
     document.getElementById('inappWarn').style.display='block';
   }
 })(); closeM('mReturn');
