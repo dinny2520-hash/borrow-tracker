@@ -1386,6 +1386,24 @@ function confirmCancelBooking(mode){
     bk.cancelled=true;
     logs.push({ts:nowStr(),type:'cancel',detail:`${s.name} ยกเลิกการจอง ${it.name} ของ ${bk.booker}`,staff:s.name});
   }
+  // ถ้ายกเลิกห้อง FRR ให้ยกเลิก autoLinked items ด้วย
+  const cancelledItem=items.find(x=>x.id===pCancelItemId);
+  if(cancelledItem?.type==='room'){
+    const autoItemId=ROOM_AUTO_ITEMS[pCancelItemId];
+    if(autoItemId){
+      const autoIt=items.find(x=>x.id===autoItemId);
+      if(autoIt){
+        // หา booking ที่ booker และเวลาตรงกัน
+        const autoBk=autoIt.bookings.find(b=>
+          !b.cancelled&&b.booker===bk.booker&&b.from===bk.from&&b.autoLinked
+        );
+        if(autoBk){
+          autoBk.cancelled=true;
+          push({action:'cancelBooking',itemId:autoItemId,bookingId:autoBk.id});
+        }
+      }
+    }
+  }
   save();render();renderBookings();closeM('mCancel');
   showToast('✅ ยกเลิกการจองแล้ว');
   push({action:'cancelBooking',itemId:pCancelItemId,bookingId:pCancelBkId});
