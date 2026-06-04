@@ -166,9 +166,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
   border-radius:var(--r);padding:10px 14px;
   font-size:13px;color:#856404;
   display:none;margin:10px 12px 0;
-  line-height:1.6;
+  line-height:1.6;position:relative;
 }
 .inapp-warn strong{display:block;margin-bottom:4px;}
+.inapp-warn-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:#856404;line-height:1;}
 /* ทำให้ date/time input ทำงานได้ดีบน mobile */
 input[type=date],input[type=time]{
   -webkit-appearance:none;
@@ -214,9 +215,10 @@ input[type=date],input[type=time]{
 </div>
 
 <div id="inappWarn" class="inapp-warn">
+  <button class="inapp-warn-close" onclick="document.getElementById('inappWarn').style.display='none'">×</button>
   <strong>⚠️ กรุณาเปิดในเบราว์เซอร์ Chrome หรือ Safari</strong>
   กด <strong>จุด 3 จุด ( ⋮ )</strong> มุมขวาบน → <strong>"เปิดในเบราว์เซอร์"</strong><br>
-  เพื่อให้ใช้งานได้เต็มรูปแบบ
+  เพื่อให้ใช้งานได้เต็มรูปแบบ รวมถึงการเลือกวันที่และเวลา
 </div>
 <div class="pages">
   <!-- อุปกรณ์ -->
@@ -688,6 +690,12 @@ const DEFAULT_ITEMS=[
   {id:'room_5',name:'ข้างล่างตึกใหม่',icon:'🏢',type:'room',bookings:[]},
   {id:'room_6',name:'ห้อง Whale Lounge',icon:'🐋',type:'room',bookings:[]},
 ];
+// ── ROOM AUTO-ITEM CONFIG ────────────────────────────────────────────────
+// ห้องที่มีอุปกรณ์พ่วงอัตโนมัติ: { roomId: itemId }
+const ROOM_AUTO_ITEMS={
+  'room_1': 'item_1' // ห้อง FRR → จอทีวี (ห้อง FRR)
+};
+
 const DEFAULT_STAFF=[
   {id:'s1',name:'บดินทร์',role:'ฝ่าย Training',pin:'1234'},
   {id:'s2',name:'เจี๊ยบ',role:'ฝ่าย HR',pin:'1234'},
@@ -745,13 +753,12 @@ function submitReturn(){
   logs.push({ts:nowStr(),type:'return_req',detail:bk.booker+' แจ้งคืน '+it.name+' → '+(s?s.name:''),staff:s?s.name:''});
   save(); render();
 
-// ตรวจจับ in-app browser (LINE, Facebook, etc.)
+// แสดงแจ้งเตือนบนมือถือทุกเครื่อง
 (function(){
   var ua=navigator.userAgent||'';
-  var isInApp=ua.indexOf('Line/')>-1||ua.indexOf('FBAN')>-1||ua.indexOf('FBAV')>-1||
-              ua.indexOf('Instagram')>-1||ua.indexOf('Twitter')>-1||
-              (ua.indexOf('wv')>-1&&ua.indexOf('Android')>-1);
-  if(isInApp){
+  var isMobile=/Android|iPhone|iPad|iPod/i.test(ua);
+  var isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  if(isMobile&&!isStandalone){
     document.getElementById('inappWarn').style.display='block';
   }
 })(); closeM('mReturn');
@@ -805,7 +812,8 @@ function getItemStatus(item){
     const to=b.to?new Date(b.to):null;
     if(from>now) return false; // ยังไม่ถึงเวลา
     if(item.type==='room') return to&&to>=now; // ห้อง: คืนออโตเมื่อครบเวลา
-    return true; // อุปกรณ์: ถือว่า current เสมอจนกว่าจะกดคืน (แม้เลยเวลาแล้ว)
+    if(b.autoLinked) return to&&to>=now; // อุปกรณ์พ่วงอัตโนมัติ: คืนออโตพร้อมห้อง
+    return true; // อุปกรณ์ทั่วไป: ถือว่า current จนกว่าจะกดคืน
   });
   const upcoming=active.filter(b=>new Date(b.from)>now).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
   return{current,upcoming,pendingRet};
@@ -818,8 +826,9 @@ function getPendingReturn(){
     it.bookings.forEach(bk=>{
       if(bk.returned||bk.cancelled) return;
       if(it.type==='room') return; // ห้องไม่ต้องอยู่ใน pending คืนอัตโนมัติ
+      if(bk.autoLinked&&bk.to&&new Date(bk.to)<now) return; // อุปกรณ์พ่วงอัตโนมัติ คืนออโต
       // อุปกรณ์: แสดงถ้า pendingReturn หรือเกินกำหนด (มี to และเลยเวลา)
-      if(bk.pendingReturn||(bk.to&&new Date(bk.to)<now)){
+      if(bk.pendingReturn||(bk.to&&new Date(bk.to)<now&&!bk.autoLinked)){
         result.push({item:it,bk});
       }
     });
@@ -1252,33 +1261,59 @@ function confirmBooking(){
     }
   }
 
-  const itemNames=checkedItems.map(id=>items.find(x=>x.id===id)?.name).filter(Boolean);
+  // เช็ค auto-items สำหรับห้องที่มีอุปกรณ์พ่วงอัตโนมัติ
+  const autoItemIds=[];
+  const autoItemWarnings=[];
+  checkedRooms.forEach(roomId=>{
+    const autoItemId=ROOM_AUTO_ITEMS[roomId];
+    if(autoItemId&&!checkedItems.includes(autoItemId)){
+      const autoIt=items.find(x=>x.id===autoItemId);
+      if(autoIt){
+        // เช็คว่าอุปกรณ์ถูกยืมไปแล้วหรือเปล่า
+        if(hasConflict(autoIt.bookings,fromDT,toDT,autoIt.type)){
+          autoItemWarnings.push(autoIt.name);
+        } else {
+          autoItemIds.push(autoItemId);
+        }
+      }
+    }
+  });
+
+  // ถ้ามีอุปกรณ์อัตโนมัติถูกยืมไปก่อน — ถามว่าจะจองห้องต่อไหม
+  if(autoItemWarnings.length){
+    const proceed=confirm('⚠️ '+autoItemWarnings.join(', ')+' ถูกยืมไปใช้งานที่อื่นในช่วงเวลานี้\n\nต้องการจองห้องต่อหรือไม่?');
+    if(!proceed) return;
+  }
+
+  // รวม autoItems เข้าไปด้วย (linkedRoom=true และคืนอัตโนมัติพร้อมห้อง)
+  const allCheckedItems=[...checkedItems,...autoItemIds];
+
+  const itemNames=allCheckedItems.map(id=>items.find(x=>x.id===id)?.name).filter(Boolean);
   const bkId=uid();
   const booking={id:bkId,booker:name,from:fromDT,to:toDT,purpose,itemNames,returned:false,cancelled:false};
 
   // เพิ่ม booking ให้ทุก item ที่เลือก
-  checkedItems.forEach(id=>{
+  allCheckedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
     if(it){
       const itemBkId=uid();
-      // พ่วงกับห้อง: มี to ตามห้อง แต่ต้องกดคืนเอง (linkedRoom=true)
-      // ยืมอุปกรณ์อย่างเดียว: มี to ตามปกติ
       const isLinked=checkedRooms.length>0;
-      it.bookings.push({...booking,id:itemBkId,itemNames:[],linkedRoom:isLinked});
+      const isAutoItem=autoItemIds.includes(id); // อุปกรณ์พ่วงอัตโนมัติ
+      it.bookings.push({...booking,id:itemBkId,itemNames:[],linkedRoom:isLinked,autoLinked:isAutoItem});
     }
   });
   // เพิ่ม booking ให้ห้อง — มีเวลาสิ้นสุดตามปกติ
   checkedRooms.forEach(id=>{
     const rm=items.find(x=>x.id===id);
-    if(rm)rm.bookings.push({...booking});
+    if(rm)rm.bookings.push({...booking,itemNames});
   });
 
   const targets=[...checkedItems,...checkedRooms].map(id=>items.find(x=>x.id===id)?.name).filter(Boolean);
   logs.push({ts:nowStr(),type:'booking',detail:`${name} จอง ${targets.join(', ')} ${fmtDT(fromDT)} – ${fmtDT(toDT)}${purpose?' ('+purpose+')':''}`,staff:''});
   save();render();closeM('mBook');
   showToast('✅ จองสำเร็จ!');
-  // push to Sheets — ใช้ booking id ที่บันทึกไว้จริงๆ ในแต่ละ item
-  checkedItems.forEach(id=>{
+  // push to Sheets
+  allCheckedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
     const latestBk=it&&it.bookings[it.bookings.length-1];
     if(latestBk) push({action:'addBooking',itemId:id,booking:Object.assign({},latestBk)});
