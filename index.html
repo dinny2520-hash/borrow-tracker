@@ -462,6 +462,21 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 </div>
 
 <!-- MODAL: ยืนยันคืน -->
+<!-- MODAL: เลือก booking ที่จะแจ้งคืน -->
+<div class="overlay" id="mReturnSelect" style="display:none" onclick="bgClose(event,'mReturnSelect')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>↩️</span><h3>เลือกรายการที่จะคืน</h3><button class="sheet-close" onclick="closeM('mReturnSelect')">×</button></div>
+  <div class="sheet-body">
+    <div class="note" style="margin-bottom:10px;">มีหลายคนยืมอยู่ กรุณาเลือกรายการของคุณ</div>
+    <div id="returnSelectList" class="staff-pick"></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-ghost btn-full" onclick="closeM('mReturnSelect')">ปิด</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: คนยืมแจ้งคืน (เลือกเจ้าหน้าที่) -->
 <div class="overlay" id="mReturn" style="display:none" onclick="bgClose(event,'mReturn')">
 <div class="sheet">
@@ -721,6 +736,27 @@ let pReturnItemId=null,pReturnBkId=null,retSelStaff=null;
 let pDeleteId=null,delSelStaff=null,pinAddSelStaff=null;
 let scanner=null;
 
+// ── เลือก booking ที่จะแจ้งคืน (กรณีมีหลาย booking) ───────────────────────
+function openReturnSelect(itemId){
+  const it=items.find(x=>x.id===itemId);
+  const now=new Date();
+  const activeBookings=it.bookings.filter(b=>{
+    if(b.returned||b.cancelled) return false;
+    if(new Date(b.from)>now) return false;
+    if(b.autoLinked||b.linkedRoom) return b.to&&new Date(b.to)>=now;
+    return true;
+  });
+  document.getElementById('returnSelectList').innerHTML=activeBookings.map(b=>`
+    <div class="sopt" onclick="closeM('mReturnSelect');openReturn('${itemId}','${b.id}')">
+      <div class="avatar">${b.booker.slice(0,2)}</div>
+      <div>
+        <div class="sopt-name">${b.booker}</div>
+        <div class="sopt-role">${fmtDT(b.from)} – ${fmtDT(b.to)||'ไม่มีกำหนด'}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('mReturnSelect').style.display='flex';
+}
+
 // ── STEP 1: คนยืมแจ้งคืน ─────────────────────────────────────────────────
 function openReturn(itemId,bkId){
   pReturnItemId=itemId; pReturnBkId=bkId; retSelStaff=null;
@@ -844,6 +880,13 @@ function renderItems(){
   el.innerHTML=myItems.map(it=>{
     const{current,upcoming,pendingRet}=getItemStatus(it);
     let pill,meta,btn,cls='';
+    // รวม booking ที่กำลังใช้งานและเกินกำหนด (ไม่นับ upcoming)
+    const activeAndOverdue=it.bookings.filter(b=>{
+      if(b.returned||b.cancelled) return false;
+      if(new Date(b.from)>new Date()) return false;
+      if(b.autoLinked||b.linkedRoom) return b.to&&new Date(b.to)>=new Date();
+      return true;
+    });
     if(pendingRet){
       pill='<span class="pill pb">🛡️ รอยืนยันการคืน</span>';
       const ps=staff.find(x=>x.id===pendingRet.pendingStaffId);
@@ -856,7 +899,10 @@ function renderItems(){
         ?'<span class="pill pr"><span class="blink">●</span> เกินกำหนด</span>'
         :'<span class="pill pa">📤 ใช้งานอยู่</span>';
       meta=`<div>${current.booker}</div><div>${isOverdue?'ครบกำหนด':'คืน'}: ${fmtDT(current.to)||'—'}</div>`;
-      btn=`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}','${current.id}')">↩️ แจ้งคืน</button>`;
+      // ถ้ามีหลาย booking ให้เปิด modal เลือก ถ้ามีแค่อันเดียวให้เปิดทันที
+      btn=activeAndOverdue.length>1
+        ?`<button class="btn btn-amber btn-sm" onclick="openReturnSelect('${it.id}')">↩️ แจ้งคืน</button>`
+        :`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}','${current.id}')">↩️ แจ้งคืน</button>`;
       cls=isOverdue?'':'active-now';
     }else if(upcoming.length){
       pill=`<span class="pill pp">📅 มีจอง ${upcoming.length} รายการ</span>`;
