@@ -917,12 +917,16 @@ function renderItems(){
     }
     // แสดง timeline การจองถัดไป
     const slots=it.bookings.filter(b=>!b.returned&&!b.cancelled).sort((a,b2)=>new Date(a.from)-new Date(b2.from));
-    const timelineHtml=slots.length?`<div class="timeline-wrap"><div class="timeline-title">ตารางการจอง</div>${slots.map(b=>`
-      <div class="booking-slot">
-        <div class="slot-bar" style="background:${new Date(b.to)<new Date()?'#aaa':new Date(b.from)<=new Date()?'#f4b942':'#5b2d8e'}"></div>
+    const timelineHtml=slots.length?`<div class="timeline-wrap"><div class="timeline-title">ตารางการจอง</div>${slots.map(b=>{
+      const isUpcoming=new Date(b.from)>new Date();
+      const isActive=new Date(b.from)<=new Date()&&(!b.to||new Date(b.to)>=new Date());
+      const isOverdue=b.to&&new Date(b.to)<new Date();
+      const barColor=isOverdue?'#aaa':isActive?'#f4b942':'#5b2d8e';
+      return`<div class="booking-slot">
+        <div class="slot-bar" style="background:${barColor}"></div>
         <div class="slot-info" style="flex:1"><span class="slot-name">${b.booker}</span> · ${fmtDT(b.from)} – ${fmtDT(b.to)}</div>
-        <button class="btn btn-danger btn-sm" style="padding:2px 7px;font-size:10px;" onclick="openCancelBooking('${it.id}','${b.id}')">ยกเลิก</button>
-      </div>`).join('')}</div>`:'';
+        ${isUpcoming?`<button class="btn btn-danger btn-sm" style="padding:2px 7px;font-size:10px;" onclick="openCancelBooking('${it.id}','${b.id}')">ยกเลิก</button>`:''}
+      </div>`;}).join('')}</div>`:'';
     return`<div class="card ${cls}">
       <div class="card-icon">${it.icon}</div>
       <div class="card-info">
