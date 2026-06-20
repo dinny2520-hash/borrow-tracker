@@ -1851,6 +1851,11 @@ window.addEventListener('load',()=>{
   setTimeout(()=>bgSync(true), 800);
   // sync ทุก 30 วินาที
   setInterval(()=>bgSync(false), 30000);
+  // re-render ทุก 1 นาที เพื่ออัปเดตสถานะตามเวลาจริง (ห้อง/อุปกรณ์ที่ครบกำหนด) แม้ไม่มีข้อมูลใหม่จาก Sheets
+  setInterval(()=>{
+    const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
+    if(!hasOpenModal) render();
+  }, 60000);
   // sync ทุกครั้งที่กลับมาที่แท็บ
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible') bgSync(false);
