@@ -169,6 +169,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
   line-height:1.6;position:relative;
 }
 .inapp-warn strong{display:block;margin-bottom:4px;}
+.shake-warn{animation:shakeWarn .4s 2;border-color:var(--red)!important;background:var(--red-bg)!important;}
+@keyframes shakeWarn{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.staff-required-hint{font-size:11px;color:var(--red);margin-top:6px;display:none;font-weight:600;}
+.staff-required-hint.show{display:block;animation:bk 0.8s 3;}
 .inapp-warn-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:#856404;line-height:1;}
 /* ทำให้ date/time input ทำงานได้ดีบน mobile */
 input[type=date],input[type=time]{
@@ -486,6 +490,7 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
     <div class="info-box" id="retInfo"></div>
     <div class="note" style="margin-bottom:12px;">เลือกเจ้าหน้าที่ที่จะนำของไปคืน</div>
     <div class="staff-pick" id="retStaffList"></div>
+    <div class="staff-required-hint" id="retStaffHint">⚠️ กรุณาเลือกเจ้าหน้าที่ก่อนกดส่งคืน</div>
   </div>
   <div class="sheet-foot">
     <button class="btn btn-amber btn-full" onclick="submitReturn()">📨 ส่งคืน (รอเจ้าหน้าที่ยืนยัน)</button>
@@ -777,9 +782,19 @@ function selRetStaff(el,id){
   retSelStaff=id;
   document.querySelectorAll('#retStaffList .sopt').forEach(function(e){e.classList.remove('sel');});
   if(el) el.classList.add('sel');
+  document.getElementById('retStaffHint').classList.remove('show');
+  document.getElementById('retStaffList').classList.remove('shake-warn');
 }
 function submitReturn(){
-  if(!retSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+  if(!retSelStaff){
+    const hint=document.getElementById('retStaffHint');
+    const list=document.getElementById('retStaffList');
+    hint.classList.add('show');
+    list.classList.add('shake-warn');
+    setTimeout(()=>list.classList.remove('shake-warn'),800);
+    list.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
   var it=items.find(function(x){return x.id===pReturnItemId;});
   var bk=it?it.bookings.find(function(b){return b.id===pReturnBkId;}):null;
   if(!bk){alert('ไม่พบข้อมูลการจอง');return;}
