@@ -1123,8 +1123,29 @@ function updateSync(){
 }
 
 function render(){
+  autoReturnLinkedItems();
   renderStats();renderItems();renderRooms();renderPending();renderLog();renderStaffCfg();updateSync();
   document.getElementById('cfgUrl').value=cfg.url||'';
+}
+
+// ── AUTO RETURN: mark returned:true จริงๆ และ push ไป Sheets สำหรับ autoLinked items ที่ครบเวลา ──
+let _autoReturning=new Set(); // กันยิง push ซ้ำ
+function autoReturnLinkedItems(){
+  const now=new Date();
+  items.filter(i=>i.type==='item').forEach(it=>{
+    it.bookings.forEach(b=>{
+      if(b.returned||b.cancelled) return;
+      if(!b.autoLinked) return;
+      if(!b.to||new Date(b.to)>=now) return;
+      // ครบเวลาแล้ว แต่ยัง returned:false — mark และ push
+      const key=it.id+'|'+b.id;
+      if(_autoReturning.has(key)) return;
+      _autoReturning.add(key);
+      b.returned=true;
+      push({action:'confirmReturn',itemId:it.id,bookingId:b.id,booker:b.booker,staffId:'auto'});
+      logs.push({ts:nowStr(),type:'return',detail:`${b.booker} คืน ${it.name} (อัตโนมัติพร้อมห้อง)`,staff:''});
+    });
+  });
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────
