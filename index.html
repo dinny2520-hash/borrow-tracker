@@ -357,7 +357,16 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
         <div id="cfgStatus" style="font-size:12px;color:var(--text3);margin-top:8px;text-align:center;"></div>
       </div>
       <div class="setup-card">
-        <div class="step-head"><span class="step-num">5</span>ทีมเจ้าหน้าที่</div>
+        <div class="step-head"><span class="step-num">5</span>จัดการสถานะอุปกรณ์</div>
+        <div class="setup-desc">ปิดใช้งานอุปกรณ์ที่ชำรุด ส่งซ่อม หรือสูญหาย</div>
+        <div class="fg">
+          <label>เลือกอุปกรณ์</label>
+          <select id="statusItemSelect"></select>
+        </div>
+        <div id="statusItemAction"></div>
+      </div>
+      <div class="setup-card">
+        <div class="step-head"><span class="step-num">6</span>ทีมเจ้าหน้าที่</div>
         <div id="staffCfg"></div>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="openAddStaff()">+ เพิ่มเจ้าหน้าที่</button>
       </div>
@@ -623,6 +632,44 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
 </div>
 </div>
 
+<!-- MODAL: ปิดใช้งานอุปกรณ์ -->
+<div class="overlay" id="mDisable" style="display:none" onclick="bgClose(event,'mDisable')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>🚫</span><h3>ปิดใช้งานอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mDisable')">×</button></div>
+  <div class="sheet-body">
+    <div class="info-box" id="disableInfo"></div>
+    <div class="note" style="margin-bottom:12px;">เฉพาะเจ้าหน้าที่เท่านั้น</div>
+    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
+    <div class="staff-pick" id="disableStaff" style="margin-bottom:12px;"></div>
+    <div class="fg"><label>PIN</label><input type="password" id="disablePin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-amber btn-full" onclick="confirmDisable()">🚫 ยืนยันปิดใช้งาน</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mDisable')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: เปิดใช้งานอุปกรณ์ -->
+<div class="overlay" id="mEnable" style="display:none" onclick="bgClose(event,'mEnable')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>✅</span><h3>เปิดใช้งานอุปกรณ์</h3><button class="sheet-close" onclick="closeM('mEnable')">×</button></div>
+  <div class="sheet-body">
+    <div class="info-box" id="enableInfo"></div>
+    <div class="note" style="margin-bottom:12px;">เฉพาะเจ้าหน้าที่เท่านั้น</div>
+    <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่</label>
+    <div class="staff-pick" id="enableStaff" style="margin-bottom:12px;"></div>
+    <div class="fg"><label>PIN</label><input type="password" id="enablePin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-confirm btn-full" onclick="confirmEnable()">✅ ยืนยันเปิดใช้งาน</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mEnable')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: ลบอุปกรณ์ -->
 <div class="overlay" id="mDelete" style="display:none" onclick="bgClose(event,'mDelete')">
 <div class="sheet">
@@ -730,7 +777,7 @@ let items=JSON.parse(localStorage.getItem('bt_items')||'null')||DEFAULT_ITEMS;
 let logs=JSON.parse(localStorage.getItem('bt_logs')||'[]');
 let staff=JSON.parse(localStorage.getItem('bt_staff')||'null')||DEFAULT_STAFF;
 // ── URL ถาวร — แก้ตรงนี้ถ้าต้องการเปลี่ยน Apps Script ──────────────────
-const FIXED_URL='https://script.google.com/macros/s/AKfycbyJeaAqYCTXMnFXrcysjxsiLQdoHCXcyvsiUrFl8LeJ8viAftvIek5L-04cjibnQWSUVw/exec';
+const FIXED_URL='https://script.google.com/macros/s/AKfycbyz6edyYzO3yesZTufsoogrcVOM6l48K5NsnW-jiYyerf80TdHWh5Gjc5o2fTvMmMP0lg/exec';
 let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{}');
 cfg.url=FIXED_URL; // บังคับใช้ URL นี้เสมอ
 save();
@@ -837,7 +884,9 @@ function uid(){return'bk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 
 // ── CONFLICT CHECK ────────────────────────────────────────────────────────
 // คืนค่า true ถ้าช่วงเวลาชนกัน
-function hasConflict(bookings,fromDT,toDT,itemType){
+function hasConflict(bookings,fromDT,toDT,itemType,itemDisabled){
+  if(itemDisabled) return true; // ไม่พร้อมใช้งาน = ถือว่าติดเสมอ
+  if(itemDisabled) {} // handled above already, this line keeps structure
   const from=new Date(fromDT),to=new Date(toDT),now=new Date();
   return bookings.filter(b=>{
     if(b.returned||b.cancelled) return false;
@@ -902,7 +951,12 @@ function renderItems(){
       if(b.autoLinked||b.linkedRoom) return b.to&&new Date(b.to)>=new Date();
       return true;
     });
-    if(pendingRet){
+    if(it.disabled){
+      pill='<span class="pill pr">🚫 ไม่พร้อมใช้งาน</span>';
+      meta=`<div>เหตุผล: ${it.disabledReason||'ไม่ระบุ'}</div><div style="font-size:11px;color:var(--text3)">ไปที่ ⚙️ ตั้งค่า เพื่อเปิดใช้งาน</div>`;
+      btn='';
+      cls='';
+    }else if(pendingRet){
       pill='<span class="pill pb">🛡️ รอยืนยันการคืน</span>';
       const ps=staff.find(x=>x.id===pendingRet.pendingStaffId);
       meta=`<div>ผู้ยืม: ${pendingRet.booker}</div><div>รอ: ${ps?ps.name:'เจ้าหน้าที่'}</div>`;
@@ -1125,7 +1179,43 @@ function updateSync(){
 function render(){
   autoReturnLinkedItems();
   renderStats();renderItems();renderRooms();renderPending();renderLog();renderStaffCfg();updateSync();
+  renderStatusItemSelect();
   document.getElementById('cfgUrl').value=cfg.url||'';
+}
+
+// ── จัดการสถานะอุปกรณ์ (หน้าตั้งค่า) ─────────────────────────────────────
+function renderStatusItemSelect(){
+  const sel=document.getElementById('statusItemSelect');
+  if(!sel)return;
+  const myItems=items.filter(i=>i.type==='item');
+  const curVal=sel.value;
+  sel.innerHTML=myItems.map(it=>`<option value="${it.id}">${it.icon} ${it.name}${it.disabled?' (ปิดใช้งานอยู่)':''}</option>`).join('');
+  if(curVal&&myItems.find(i=>i.id===curVal)) sel.value=curVal;
+  sel.onchange=renderStatusItemAction;
+  renderStatusItemAction();
+}
+function renderStatusItemAction(){
+  const sel=document.getElementById('statusItemSelect');
+  const wrap=document.getElementById('statusItemAction');
+  if(!sel||!wrap)return;
+  const it=items.find(x=>x.id===sel.value);
+  if(!it){wrap.innerHTML='';return;}
+  if(it.disabled){
+    wrap.innerHTML=`
+      <div class="info-box" style="margin-top:10px;">🚫 ปิดใช้งานอยู่ — เหตุผล: ${it.disabledReason||'ไม่ระบุ'}</div>
+      <button class="btn btn-confirm btn-full" onclick="openEnable('${it.id}')">✅ เปิดใช้งาน</button>`;
+  }else{
+    wrap.innerHTML=`
+      <div class="fg" style="margin-top:10px;"><label>เหตุผลที่จะปิดใช้งาน</label>
+        <select id="statusDisableReason">
+          <option value="ชำรุด/เสียหาย">ชำรุด/เสียหาย</option>
+          <option value="ส่งซ่อม">ส่งซ่อม</option>
+          <option value="สูญหาย">สูญหาย</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
+      <button class="btn btn-amber btn-full" onclick="openDisable('${it.id}',document.getElementById('statusDisableReason').value)">🚫 ปิดใช้งาน</button>`;
+  }
 }
 
 // ── AUTO RETURN: mark returned:true จริงๆ และ push ไป Sheets สำหรับ autoLinked items ที่ครบเวลา ──
@@ -1283,7 +1373,7 @@ function checkDateConflicts(){
   let itemConflicts=[];
   document.querySelectorAll('#bkItemList input:checked').forEach(cb=>{
     const it=items.find(x=>x.id===cb.value);
-    if(it&&hasConflict(it.bookings,fromDT,toDT,it.type)){
+    if(it&&hasConflict(it.bookings,fromDT,toDT,it.type,it.disabled)){
       itemConflicts.push(it.name);
       cb.closest('.cb-item').classList.add('disabled');
       cb.checked=false;
@@ -1294,7 +1384,7 @@ function checkDateConflicts(){
   items.filter(i=>i.type==='item').forEach(it=>{
     const st=document.getElementById('cbst-'+it.id);
     if(!st)return;
-    if(hasConflict(it.bookings,fromDT,toDT,it.type)){
+    if(hasConflict(it.bookings,fromDT,toDT,it.type,it.disabled)){
       st.textContent='ติดการจอง';st.style.color='var(--red)';
       const cb=document.querySelector(`#cbi-${it.id} input`);
       if(cb){cb.disabled=true;cb.closest('.cb-item').classList.add('disabled');}
@@ -1308,7 +1398,7 @@ function checkDateConflicts(){
   let roomConflicts=[];
   document.querySelectorAll('#bkRoomList input:checked').forEach(cb=>{
     const rm=items.find(x=>x.id===cb.value);
-    if(rm&&hasConflict(rm.bookings,fromDT,toDT,rm.type)){
+    if(rm&&hasConflict(rm.bookings,fromDT,toDT,rm.type,rm.disabled)){
       roomConflicts.push(rm.name);
       cb.checked=false;
     }
@@ -1342,7 +1432,7 @@ function confirmBooking(){
   const allTarget=[...checkedItems,...checkedRooms];
   for(const id of allTarget){
     const it=items.find(x=>x.id===id);
-    if(it&&hasConflict(it.bookings,fromDT,toDT,it.type)){
+    if(it&&hasConflict(it.bookings,fromDT,toDT,it.type,it.disabled)){
       alert(`❌ มีผู้จองช่วงเวลานี้แล้ว\n"${it.name}" ไม่สามารถจองได้ กรุณาเลือกช่วงเวลาอื่น`);return;
     }
   }
@@ -1762,6 +1852,71 @@ function confirmDeleteRoom(){
   save();render();renderRooms();closeM('mDeleteRoom');
   showToast('✅ ลบห้องแล้ว');
   push({action:'deleteItem',id:pDeleteRoomId});
+}
+
+// ── DISABLE/ENABLE ITEM ──────────────────────────────────────────────────
+let pDisableId=null, disableSelStaff=null, pEnableId=null, enableSelStaff=null;
+
+let pDisableReason='';
+function openDisable(id,reason){
+  pDisableId=id; disableSelStaff=null; pDisableReason=reason||'ชำรุด/เสียหาย';
+  const it=items.find(x=>x.id===id);
+  document.getElementById('disableInfo').innerHTML=`<strong>${it?.icon} ${it?.name}</strong><br>เหตุผล: <strong>${pDisableReason}</strong><br>จะไม่สามารถจองได้จนกว่าจะเปิดใช้งาน`;
+  document.getElementById('disablePin').value='';
+  document.getElementById('disableStaff').innerHTML=staff.map(s=>`
+    <div class="sopt" id="dis-${s.id}" onclick="selDisableStaff('${s.id}')">
+      <div class="avatar">${s.name.slice(0,2)}</div>
+      <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
+    </div>`).join('');
+  document.getElementById('mDisable').style.display='flex';
+}
+function selDisableStaff(id){
+  disableSelStaff=id;
+  document.querySelectorAll('#disableStaff .sopt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('dis-'+id)?.classList.add('sel');
+}
+function confirmDisable(){
+  if(!disableSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+  const pin=document.getElementById('disablePin').value;
+  const s=staff.find(x=>x.id===disableSelStaff);
+  if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
+  const it=items.find(x=>x.id===pDisableId);
+  const reason=pDisableReason;
+  it.disabled=true; it.disabledReason=reason;
+  logs.push({ts:nowStr(),type:'disable',detail:`${s.name} ปิดใช้งาน ${it.name} (${reason})`,staff:s.name});
+  save();render();closeM('mDisable');
+  showToast('🚫 ปิดใช้งานแล้ว');
+  push({action:'updateItemStatus',itemId:it.id,disabled:true,disabledReason:reason});
+}
+
+function openEnable(id){
+  pEnableId=id; enableSelStaff=null;
+  const it=items.find(x=>x.id===id);
+  document.getElementById('enableInfo').innerHTML=`<strong>${it?.icon} ${it?.name}</strong><br>เหตุผลที่ปิด: ${it?.disabledReason||'-'}<br>เปิดใช้งานกลับเป็นปกติ?`;
+  document.getElementById('enablePin').value='';
+  document.getElementById('enableStaff').innerHTML=staff.map(s=>`
+    <div class="sopt" id="ena-${s.id}" onclick="selEnableStaff('${s.id}')">
+      <div class="avatar">${s.name.slice(0,2)}</div>
+      <div><div class="sopt-name">${s.name}</div><div class="sopt-role">${s.role}</div></div>
+    </div>`).join('');
+  document.getElementById('mEnable').style.display='flex';
+}
+function selEnableStaff(id){
+  enableSelStaff=id;
+  document.querySelectorAll('#enableStaff .sopt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('ena-'+id)?.classList.add('sel');
+}
+function confirmEnable(){
+  if(!enableSelStaff){alert('กรุณาเลือกเจ้าหน้าที่');return;}
+  const pin=document.getElementById('enablePin').value;
+  const s=staff.find(x=>x.id===enableSelStaff);
+  if(!s||pin!==s.pin){alert('PIN ไม่ถูกต้อง');return;}
+  const it=items.find(x=>x.id===pEnableId);
+  it.disabled=false; it.disabledReason='';
+  logs.push({ts:nowStr(),type:'enable',detail:`${s.name} เปิดใช้งาน ${it.name}`,staff:s.name});
+  save();render();closeM('mEnable');
+  showToast('✅ เปิดใช้งานแล้ว');
+  push({action:'updateItemStatus',itemId:it.id,disabled:false,disabledReason:''});
 }
 
 function copyCode(){navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent).then(()=>alert('คัดลอกแล้ว!'));}
