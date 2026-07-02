@@ -43,7 +43,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .sec-title{font-size:14px;font-weight:700;}
 .sec-right{margin-left:auto;display:flex;gap:6px;}
 .card-list{display:flex;flex-direction:column;gap:8px;}
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
+.card{background:var(--white);border:1px solid #c5d8f0;border-radius:var(--r);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
 .card.booked{border-color:#c8b4e8;background:#faf7fd;}
 .card.active-now{border-color:#f4b942;background:#fffbf0;}
 .card.pending{border-color:#bbd6c7;background:#f7fdfb;}
@@ -118,7 +118,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
 .cb-status{font-size:10px;color:var(--text3);}
 
 /* ROOM CARDS */
-.room-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;}
+.room-card{background:var(--white);border:1px solid #c5d8f0;border-radius:var(--r);padding:12px 14px;margin-bottom:8px;}
 .room-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
 .room-icon{font-size:20px;}
 .room-name{font-size:14px;font-weight:600;}
@@ -232,7 +232,7 @@ input[type=date],input[type=time]{
       <div class="sec-head">
         <span class="sec-title">อุปกรณ์</span>
         <div class="sec-right">
-          <button class="btn btn-primary btn-sm" onclick="openBooking('item')">📅 จอง/ยืม</button>
+          <button class="btn btn-primary" onclick="openBooking('item')" style="font-size:14px;padding:7px 14px;">📅 จอง/ยืม</button>
           <button class="btn btn-ghost btn-sm" onclick="openAdd()">+ เพิ่ม</button>
         </div>
       </div>
@@ -246,7 +246,7 @@ input[type=date],input[type=time]{
       <div class="sec-head">
         <span class="sec-title">ห้องประชุม</span>
         <div class="sec-right">
-          <button class="btn btn-purple btn-sm" onclick="openBooking('room')">📅 จองห้อง</button>
+          <button class="btn btn-purple" onclick="openBooking('room')" style="font-size:14px;padding:7px 14px;">📅 จองห้อง</button>
           <button class="btn btn-ghost btn-sm" onclick="openAddRoom()">+ เพิ่มห้อง</button>
         </div>
       </div>
@@ -1063,8 +1063,10 @@ function renderBookings(){
   if(filter==='upcoming') all=all.filter(({bk})=>new Date(bk.from)>now&&!bk.returned);
   else if(filter==='active') all=all.filter(({bk})=>new Date(bk.from)<=now&&new Date(bk.to)>=now&&!bk.returned);
   else if(filter==='done') all=all.filter(({bk})=>bk.returned||new Date(bk.to)<now);
-  all.sort((a,b2)=>new Date(a.bk.from)-new Date(b2.bk.from));
+  all.sort((a,b2)=>new Date(b2.bk.from)-new Date(a.bk.from)); // ล่าสุดขึ้นก่อน
   if(!all.length){el.innerHTML='<div class="empty"><div class="empty-ic">📅</div>ไม่มีการจอง</div>';return;}
+  const totalCount=all.length;
+  all=all.slice(0,20); // แสดงแค่ 20 รายการล่าสุด
   el.innerHTML=all.map(({item,bk})=>{
     const isActive=new Date(bk.from)<=now&&new Date(bk.to)>=now&&!bk.returned;
     const isDone=bk.returned||new Date(bk.to)<now;
@@ -1093,7 +1095,7 @@ function renderBookings(){
         }
       </div>
     </div>`;
-  }).join('');
+  }).join('')+(totalCount>20?`<div style="text-align:center;padding:12px;font-size:12px;color:var(--text3)">แสดง 20 รายการล่าสุด จากทั้งหมด ${totalCount} รายการ</div>`:'');
 }
 
 // ── RENDER PENDING ────────────────────────────────────────────────────────
