@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>ระบบจอง-ยืมอุปกรณ์</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{
   --bg:#f7f6f3;--white:#fff;--border:#e2dfd8;--border2:#ccc9c0;
@@ -282,22 +280,12 @@ input[type=date],input[type=time]{
 
       <div id="scanResult" style="display:none" class="scan-result"></div>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="btn btn-primary btn-sm" onclick="startScan()">📷 เปิดกล้อง</button>
-        <button class="btn btn-ghost btn-sm" onclick="stopScan()">หยุด</button>
+        
+        
       </div>
-      <div class="tip" style="margin-top:10px;">💡 สแกน QR บนป้ายอุปกรณ์</div>
+
     </div>
   </div>
-
-  <!-- QR -->
-  <div class="page" id="p-qr">
-    <div style="padding:12px 12px 0;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:14px;font-weight:700;">QR Code ป้ายอุปกรณ์</span>
-      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ พิมพ์</button>
-    </div>
-    <div class="qr-grid" id="qrGrid"></div>
-  </div>
-
   <!-- ประวัติ -->
   <div class="page" id="p-log">
     <div class="log-list" id="logList"></div>
@@ -786,7 +774,6 @@ let bookMode='item'; // 'item' | 'room'
 let pConfirmItemId=null,pConfirmBkId=null,confSelStaff=null;
 let pReturnItemId=null,pReturnBkId=null,retSelStaff=null;
 let pDeleteId=null,delSelStaff=null,pinAddSelStaff=null;
-let scanner=null;
 
 // ── เลือก booking ที่จะแจ้งคืน (กรณีมีหลาย booking) ───────────────────────
 function openReturnSelect(itemId){
@@ -1148,20 +1135,6 @@ function renderLog(){
     </div>`).join('');
 }
 
-function renderQR(){
-  const el=document.getElementById('qrGrid');el.innerHTML='';
-  const base=location.href.split('?')[0];
-  items.filter(i=>i.type==='item').forEach(it=>{
-    const card=document.createElement('div');card.className='qr-card';
-    const qw=document.createElement('div');qw.style.cssText='display:flex;justify-content:center;';
-    const qd=document.createElement('div');qw.appendChild(qd);
-    card.appendChild(qw);
-    card.innerHTML+=`<h4>${it.icon} ${it.name}</h4><p>${it.id}</p>`;
-    el.appendChild(card);card.insertBefore(qw,card.firstChild);
-    try{new QRCode(qd,{text:base+'?scan='+encodeURIComponent(it.id),width:115,height:115,colorDark:'#1c1b18',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
-    catch(e){qd.textContent=it.id;}
-  });
-}
 
 function renderStaffCfg(){
   document.getElementById('staffCfg').innerHTML=staff.map(s=>`
@@ -1246,7 +1219,6 @@ function go(p){
   document.querySelectorAll('.bnav').forEach(el=>el.classList.remove('active'));
   document.getElementById('p-'+p).classList.add('active');
   document.getElementById('bn-'+p)?.classList.add('active');
-  if(p==='qr')renderQR();
   if(p==='bookings')renderBookings();
   if(p==='report'){initReportMonths();renderReport();}
 }
@@ -1756,32 +1728,6 @@ async function push(data){
     const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify(data))+'&t='+Date.now();
     await fetch(url);
   }catch(e){console.warn('push error',e);}
-}
-
-// ── SCAN ──────────────────────────────────────────────────────────────────
-function startScan(){
-  if(scanner){try{scanner.stop();}catch(e){}}
-  document.getElementById('scanResult').style.display='none';
-  scanner=new Html5Qrcode('reader');
-  scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},onScan,()=>{})
-    .catch(e=>alert('ไม่สามารถเปิดกล้องได้: '+e));
-}
-function stopScan(){if(scanner){try{scanner.stop().catch(()=>{});}catch(e){}scanner=null;}}
-function onScan(text){
-  stopScan();
-  let id;try{id=new URL(text).searchParams.get('scan')||text;}catch{id=text;}
-  const it=items.find(x=>x.id===id);
-  const box=document.getElementById('scanResult');box.style.display='';
-  if(it){
-    const{current}=getItemStatus(it);
-    if(current){
-      box.innerHTML=`<strong>${it.icon} ${it.name}</strong><br>ยืมโดย: ${current.booker}<br>คืนภายใน: ${fmtDT(current.to)}<br>
-        <button class="btn btn-amber btn-sm" style="margin-top:8px" onclick="openReturn('${it.id}','${current.id}');go('items')">↩️ แจ้งคืน</button>`;
-    }else{
-      box.innerHTML=`<strong>${it.icon} ${it.name}</strong> — ว่างอยู่<br>
-        <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openBooking('item','${it.id}');go('items')">📅 จองอุปกรณ์นี้</button>`;
-    }
-  }else{box.innerHTML=`❌ ไม่พบอุปกรณ์ (ID: ${id})`;}
 }
 
 // ── COPY / MODAL ──────────────────────────────────────────────────────────
