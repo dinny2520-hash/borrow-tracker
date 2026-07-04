@@ -109,7 +109,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
 
 /* CHECKBOX ITEMS */
 .cb-list{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;}
-.cb-item{display:flex;align-items:center;gap:9px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;}
+.cb-item{display:flex;align-items:center;gap:9px;padding:10px 11px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(31,107,69,.15);}
 .cb-item.checked{border-color:var(--green);background:var(--green-bg);}
 .cb-item.disabled{opacity:.4;cursor:not-allowed;}
 .cb-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--green);flex-shrink:0;}
@@ -1352,8 +1352,14 @@ function updateItemCount(){
   document.querySelectorAll('#bkItemList .cb-item').forEach(el=>{
     el.classList.toggle('checked',el.querySelector('input').checked);
   });
-  const n=document.querySelectorAll('#bkItemList input:checked').length;
-  document.getElementById('bkSelCount').textContent=n?`เลือก ${n} รายการ`:'';
+  const checkedBoxes=[...document.querySelectorAll('#bkItemList input:checked')];
+  const names=checkedBoxes.map(cb=>{
+    const it=items.find(x=>x.id===cb.value);
+    return it?it.name:'';
+  }).filter(Boolean);
+  document.getElementById('bkSelCount').innerHTML=names.length
+    ?`✅ เลือกแล้ว: <strong>${names.join(', ')}</strong>`
+    :'';
   checkDateConflicts();
 }
 
@@ -2013,8 +2019,11 @@ function bgClose(e,id){if(e.target===e.currentTarget)closeM(id);}
 ['bkFD','bkFT','bkTD','bkTT'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('change',()=>{
-    refreshItemCheckboxes();
-    setTimeout(checkDateConflicts,50);
+    el.blur(); // ปิดคีย์บอร์ดก่อน rebuild list กัน ghost tap หลังคีย์บอร์ดปิด
+    setTimeout(()=>{
+      refreshItemCheckboxes();
+      checkDateConflicts();
+    },150);
   });
 });
 
