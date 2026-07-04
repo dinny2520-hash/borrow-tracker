@@ -58,6 +58,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .pr{background:var(--red-bg);color:var(--red);}
 .pb{background:var(--blue-bg);color:var(--blue);}
 .pp{background:var(--purple-bg);color:var(--purple);}
+.action-badge{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:11px;font-weight:700;}
+.action-badge.disabled-badge{color:var(--red);}
+.action-badge.active-badge,.action-badge.active-badge .redcircle{animation:blinkStrong 1s infinite;}
+.redcircle{width:9px;height:9px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.action-badge.active-badge{color:var(--red);}
+@keyframes blinkStrong{0%,100%{opacity:1}50%{opacity:.25}}
 .blink{animation:bk 1.2s infinite;}
 @keyframes bk{0%,100%{opacity:1}50%{opacity:.3}}
 .btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:var(--r);font-size:12px;font-family:'Sarabun',sans-serif;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.12s;white-space:nowrap;}
@@ -957,10 +963,12 @@ function renderItems(){
       if(b.autoLinked||b.linkedRoom) return b.to&&new Date(b.to)>=new Date();
       return true;
     });
+    let actionBadge='';
     if(it.disabled){
-      pill='<span class="pill pr">🚫 ไม่พร้อมใช้งาน</span>';
+      pill='';
       meta=`<div>เหตุผล: ${it.disabledReason||'ไม่ระบุ'}</div><div style="font-size:11px;color:var(--text3)">ไปที่ ⚙️ ตั้งค่า เพื่อเปิดใช้งาน</div>`;
-      btn='';
+      btn='<button class="btn btn-ghost btn-sm" disabled style="opacity:.5;cursor:not-allowed;">📅 จอง</button>';
+      actionBadge='<div class="action-badge disabled-badge">🚫 ไม่พร้อมใช้งาน</div>';
       cls='';
     }else if(pendingRet){
       pill='<span class="pill pb">🛡️ รอยืนยันการคืน</span>';
@@ -970,14 +978,15 @@ function renderItems(){
       cls='pending';
     }else if(current){
       const isOverdue=current.to&&new Date(current.to)<new Date();
-      pill=isOverdue
-        ?'<span class="pill pr"><span class="blink">●</span> เกินกำหนด</span>'
-        :'<span class="pill pa">📤 ใช้งานอยู่</span>';
+      pill=isOverdue?'<span class="pill pr"><span class="blink">●</span> เกินกำหนด</span>':'';
       meta=`<div>${current.booker}</div><div>${isOverdue?'ครบกำหนด':'คืน'}: ${fmtDT(current.to)||'—'}</div>`;
       // ถ้ามีหลาย booking ให้เปิด modal เลือก ถ้ามีแค่อันเดียวให้เปิดทันที
       btn=activeAndOverdue.length>1
         ?`<button class="btn btn-amber btn-sm" onclick="openReturnSelect('${it.id}')">↩️ แจ้งคืน</button>`
         :`<button class="btn btn-amber btn-sm" onclick="openReturn('${it.id}','${current.id}')">↩️ แจ้งคืน</button>`;
+      if(!isOverdue){
+        actionBadge='<div class="action-badge active-badge"><span class="redcircle"></span>กำลังใช้งานอยู่</div>';
+      }
       cls=isOverdue?'':'active-now';
     }else if(upcoming.length){
       pill=`<span class="pill pp">📅 มีจอง ${upcoming.length} รายการ</span>`;
@@ -1010,7 +1019,7 @@ function renderItems(){
         <div class="card-meta">${meta}</div>
         ${timelineHtml}
       </div>
-      <div class="card-action">${btn}</div>
+      <div class="card-action">${btn}${actionBadge}</div>
     </div>`;
   }).join('');
 }
