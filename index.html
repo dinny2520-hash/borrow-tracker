@@ -300,7 +300,7 @@ input[type=date],input[type=time]{
         <span class="sec-title">รายงานการจองห้องประชุม</span>
         <div class="sec-right">
           <select id="reportMonth" onchange="renderReport()" style="font-size:12px;padding:4px 8px;width:auto;"></select>
-          <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">📥 Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="openExportPin()">📥 Excel</button>
         </div>
       </div>
       <div id="reportContent"></div>
@@ -676,6 +676,22 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
   <div class="sheet-foot">
     <button class="btn btn-danger btn-full" onclick="confirmDelete()">🗑️ ยืนยันลบ</button>
     <button class="btn btn-ghost btn-full" onclick="closeM('mDelete')">ยกเลิก</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: PIN สำหรับ Export รายงาน -->
+<div class="overlay" id="mExportPin" style="display:none" onclick="bgClose(event,'mExportPin')">
+<div class="sheet">
+  <div class="sheet-handle"><div class="handle-bar"></div></div>
+  <div class="sheet-head"><span>🔒</span><h3>ยืนยันตัวตนแอดมิน</h3><button class="sheet-close" onclick="closeM('mExportPin')">×</button></div>
+  <div class="sheet-body">
+    <div class="note" style="margin-bottom:12px;">เฉพาะผู้ดูแลระบบ (บดินทร์) เท่านั้นที่ส่งออกรายงานได้</div>
+    <div class="fg"><label>PIN ผู้ดูแลระบบ</label><input type="password" id="exportPinInput" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-primary btn-full" onclick="verifyExportPin()">✅ ยืนยันและส่งออก</button>
+    <button class="btn btn-ghost btn-full" onclick="closeM('mExportPin')">ยกเลิก</button>
   </div>
 </div>
 </div>
@@ -1682,6 +1698,19 @@ function removeStaff(id){
 // ── SETUP PIN ─────────────────────────────────────────────────────────────
 const ADMIN_ID='s1';
 const ADMIN_FALLBACK_PIN='1234'; // PIN สำรองของ admin (บดินทร์)
+
+function openExportPin(){
+  document.getElementById('exportPinInput').value='';
+  document.getElementById('mExportPin').style.display='flex';
+}
+function verifyExportPin(){
+  const pin=document.getElementById('exportPinInput').value;
+  const admin=staff.find(x=>x.id===ADMIN_ID);
+  const correctPin=admin?admin.pin:ADMIN_FALLBACK_PIN;
+  if(pin!==correctPin){alert('PIN ไม่ถูกต้อง');return;}
+  closeM('mExportPin');
+  exportReportExcel();
+}
 function openSetupPin(){document.getElementById('setupPinInput').value='';document.getElementById('mSetupPin').style.display='flex';}
 function verifySetupPin(){
   const pin=document.getElementById('setupPinInput').value;
@@ -2035,4 +2064,3 @@ render();
 </script>
 </body>
 </html>
-    
