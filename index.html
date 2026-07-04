@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>ระบบจอง-ยืมอุปกรณ์</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f7f6f3;--white:#fff;--border:#e2dfd8;--border2:#ccc9c0;
@@ -298,6 +299,7 @@ input[type=date],input[type=time]{
         <span class="sec-title">รายงานการจองห้องประชุม</span>
         <div class="sec-right">
           <select id="reportMonth" onchange="renderReport()" style="font-size:12px;padding:4px 8px;width:auto;"></select>
+          <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">📥 Excel</button>
         </div>
       </div>
       <div id="reportContent"></div>
@@ -1895,6 +1897,18 @@ function initReportMonths(){
   if(curVal&&sorted.includes(curVal)) sel.value=curVal;
 }
 
+function calcDurationText(fromStr,toStr){
+  const from=new Date(fromStr),to=new Date(toStr);
+  const mins=Math.round((to-from)/60000);
+  if(mins<=0)return'—';
+  const h=Math.floor(mins/60),m=mins%60;
+  return(h>0?h+' ชม.':'')+(m>0?' '+m+' นาที':'')||'0 นาที';
+}
+function calcDurationMins(fromStr,toStr){
+  const from=new Date(fromStr),to=new Date(toStr);
+  const mins=Math.round((to-from)/60000);
+  return mins>0?mins:0;
+}
 function renderReport(){
   const sel=document.getElementById('reportMonth');
   const el=document.getElementById('reportContent');
@@ -1902,27 +1916,58 @@ function renderReport(){
   initReportMonths();
   const [y,mo]=sel.value.split('-').map(Number);
   const rooms=items.filter(i=>i.type==='room');
-  // นับการจองแต่ละห้องในเดือนนั้น
+  // นับการจองแต่ละห้องในเดือนนั้น พร้อมรวมเวลาที่ใช้
   const data=rooms.map(rm=>{
     const bks=rm.bookings.filter(b=>{
       if(b.cancelled)return false;
       const d=new Date(b.from);
       return d.getFullYear()===y&&(d.getMonth()+1)===mo;
     });
-    return{room:rm, count:bks.length, bookings:bks};
+    const totalMins=bks.reduce((sum,b)=>sum+calcDurationMins(b.from,b.to),0);
+    return{room:rm, count:bks.length, bookings:bks, totalMins};
   }).sort((a,b2)=>b2.count-a.count);
   const maxCount=Math.max(...data.map(d=>d.count),1);
   if(!data.some(d=>d.count>0)){
     el.innerHTML='<div class="empty"><div class="empty-ic">📊</div>ไม่มีการจองในเดือนนี้</div>';
     return;
   }
-  el.innerHTML=data.map(d=>`
-    <div class="report-card">
+  el.innerHTML=data.map(d=>{
+    const h=Math.floor(d.totalMins/60),m=d.totalMins%60;
+    const totalTimeText=(h>0?h+' ชม. ':'')+(m>0?m+' นาที':(h===0?'0 นาที':''));
+    return`<div class="report-card">
       <div class="report-room">${d.room.icon} ${d.room.name}</div>
       <div class="report-bar-wrap"><div class="report-bar" style="width:${(d.count/maxCount*100)}%"></div></div>
-      <div class="report-count">จำนวน <strong>${d.count}</strong> ครั้ง</div>
-      ${d.bookings.length?`<div class="report-detail">${d.bookings.map(b=>`📅 ${b.booker}${b.purpose?' ('+b.purpose+')':''} · ${fmtDT(b.from)}`).join('<br>')}</div>`:''}
-    </div>`).join('');
+      <div class="report-count">จำนวน <strong>${d.count}</strong> ครั้ง · รวมเวลาใช้งาน <strong>${totalTimeText}</strong></div>
+      ${d.bookings.length?`<div class="report-detail">${d.bookings.map(b=>`📅 ${b.booker}${b.purpose?' ('+b.purpose+')':''} · ${fmtDT(b.from)} (${calcDurationText(b.from,b.to)})`).join('<br>')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── EXPORT EXCEL ──────────────────────────────────────────────────────────
+function exportReportExcel(){
+  const sel=document.getElementById('reportMonth');
+  if(!sel)return;
+  const [y,mo]=sel.value.split('-').map(Number);
+  const rooms=items.filter(i=>i.type==='room');
+  const rows=[['ห้อง','ผู้จอง','วัตถุประสงค์','วันที่เริ่ม','วันที่สิ้นสุด','ระยะเวลา (นาที)','ระยะเวลา (ชม:นาที)']];
+  rooms.forEach(rm=>{
+    rm.bookings.filter(b=>{
+      if(b.cancelled)return false;
+      const d=new Date(b.from);
+      return d.getFullYear()===y&&(d.getMonth()+1)===mo;
+    }).forEach(b=>{
+      const mins=calcDurationMins(b.from,b.to);
+      rows.push([rm.name,b.booker,b.purpose||'',fmtDT(b.from),fmtDT(b.to),mins,calcDurationText(b.from,b.to)]);
+    });
+  });
+  if(rows.length===1){alert('ไม่มีข้อมูลในเดือนนี้');return;}
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:18},{wch:20},{wch:25},{wch:20},{wch:20},{wch:14},{wch:16}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'รายงาน');
+  const monthNames=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const fname=`รายงานห้องประชุม_${monthNames[mo-1]}${y+543}.xlsx`;
+  XLSX.writeFile(wb,fname);
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────
