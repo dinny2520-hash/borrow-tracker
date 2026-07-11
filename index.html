@@ -512,6 +512,11 @@ function out(data){return ContentService.createTextOutput(JSON.stringify(data)).
   <div class="sheet-head"><span>🛡️</span><h3>ยืนยันรับคืน</h3><button class="sheet-close" onclick="closeM('mConfirm')">×</button></div>
   <div class="sheet-body">
     <div class="info-box" id="confInfo"></div>
+    <!-- แสดงเฉพาะกรณีไม่มีเจ้าหน้าที่ระบุไว้ (ของเกินกำหนดโดยไม่ผ่านขั้นแจ้งคืน) -->
+    <div id="confStaffPickWrap" style="display:none;">
+      <label style="margin-bottom:8px;">เลือกเจ้าหน้าที่ (ผู้รับของคืน)</label>
+      <div class="staff-pick" id="confStaffList" style="margin-bottom:12px;"></div>
+    </div>
     <div class="fg"><label>PIN เจ้าหน้าที่</label><input type="password" id="confPin" placeholder="กรอก PIN" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;"/></div>
   </div>
   <div class="sheet-foot">
@@ -1120,18 +1125,23 @@ function renderPending(){
   const nb=document.getElementById('bnbadge');
   nb.textContent=p.length;nb.style.display=p.length?'':'none';
   if(!p.length){el.innerHTML='<div class="empty"><div class="empty-ic">✅</div>ไม่มีรายการรอยืนยัน</div>';return;}
-  el.innerHTML=p.map(({item,bk})=>`
-    <div class="card">
+  el.innerHTML=p.map(({item,bk})=>{
+    const isPending=bk.pendingReturn;
+    const statusPill=isPending
+      ?'<span class="pill pb">🛡️ รอยืนยัน</span>'
+      :'<span class="pill pr"><span class="blink">●</span> เกินกำหนด</span>';
+    return`<div class="card ${isPending?'pending':''}">
       <div class="card-icon">${item.icon}</div>
       <div class="card-info">
         <div class="card-name">${item.name}</div>
-        <div style="margin-top:2px;"><span class="pill pr"><span class="blink">●</span> เกินกำหนด</span></div>
+        <div style="margin-top:2px;">${statusPill}</div>
         <div class="card-meta">ผู้ยืม: ${bk.booker}<br>ครบกำหนด: ${fmtDT(bk.to)}</div>
       </div>
       <div class="card-action">
+        ${!isPending?`<button class="btn btn-amber btn-sm" onclick="openReturn('${item.id}','${bk.id}')">↩️ แจ้งคืน</button>`:''}
         <button class="btn btn-confirm btn-sm" onclick="openReturnConfirm('${item.id}','${bk.id}')">🛡️ ใส่ PIN ยืนยัน</button>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 function renderStats(){
@@ -1604,8 +1614,9 @@ function cancelBooking(itemId,bkId){
 }
 
 // ── RETURN ────────────────────────────────────────────────────────────────
+let confManualStaff=null;
 function openReturnConfirm(itemId,bkId){
-  pConfirmItemId=itemId; pConfirmBkId=bkId;
+  pConfirmItemId=itemId; pConfirmBkId=bkId; confManualStaff=null;
   const it=items.find(x=>x.id===itemId);
   const bk=it?.bookings.find(b=>b.id===bkId);
   const s=staff.find(x=>x.id===bk?.pendingStaffId);
@@ -1614,15 +1625,38 @@ function openReturnConfirm(itemId,bkId){
     (s?`เจ้าหน้าที่: <strong>${s.name}</strong><br>`:'')+ 
     `กำหนดคืน: ${fmtDT(bk?.to)}`;
   document.getElementById('confPin').value='';
+  const pickWrap=document.getElementById('confStaffPickWrap');
+  if(s){
+    // มีเจ้าหน้าที่ระบุไว้แล้ว (ผ่านขั้นแจ้งคืน) — ไม่ต้องเลือกซ้ำ
+    pickWrap.style.display='none';
+  }else{
+    // ไม่มีเจ้าหน้าที่ระบุไว้ (ของเกินกำหนดเอง) — ให้เลือกเอง
+    pickWrap.style.display='block';
+    document.getElementById('confStaffList').innerHTML=staff.map(st=>`
+      <div class="sopt" id="cfs-${st.id}" onclick="selConfManualStaff('${st.id}')">
+        <div class="avatar">${st.name.slice(0,2)}</div>
+        <div><div class="sopt-name">${st.name}</div><div class="sopt-role">${st.role}</div></div>
+      </div>`).join('');
+  }
   document.getElementById('mConfirm').style.display='flex';
+}
+function selConfManualStaff(id){
+  confManualStaff=id;
+  document.querySelectorAll('#confStaffList .sopt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('cfs-'+id)?.classList.add('sel');
 }
 function confirmStaff(){
   const pin=document.getElementById('confPin').value;
   const it=items.find(x=>x.id===pConfirmItemId);
   const bk=it&&it.bookings.find(b=>b.id===pConfirmBkId);
   if(!it||!bk){alert('ไม่พบข้อมูล');return;}
-  // ดึง staff จาก pendingStaffId ที่บันทึกไว้ตอนแจ้งคืน
-  const s=staff.find(x=>x.id===bk.pendingStaffId);
+  // ดึง staff จาก pendingStaffId ถ้ามี ไม่งั้นใช้ที่เลือกเองในกรณีของเกินกำหนดเอง
+  const staffId=bk.pendingStaffId||confManualStaff;
+  if(!staffId){
+    alert('⚠️ กรุณาเลือกเจ้าหน้าที่ก่อนยืนยันรับคืน');
+    return;
+  }
+  const s=staff.find(x=>x.id===staffId);
   if(!s){alert('ไม่พบข้อมูลเจ้าหน้าที่ กรุณา sync ข้อมูลใหม่');return;}
   if(pin!==s.pin){alert('PIN ไม่ถูกต้อง\nเจ้าหน้าที่ที่รับคืน: '+s.name);return;}
   const borrower=bk.booker;
@@ -2082,4 +2116,3 @@ render();
 </script>
 </body>
 </html>
-    
