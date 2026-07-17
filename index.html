@@ -795,7 +795,7 @@ let items=JSON.parse(localStorage.getItem('bt_items')||'null')||DEFAULT_ITEMS;
 let logs=JSON.parse(localStorage.getItem('bt_logs')||'[]');
 let staff=JSON.parse(localStorage.getItem('bt_staff')||'null')||DEFAULT_STAFF;
 // ── URL ถาวร — แก้ตรงนี้ถ้าต้องการเปลี่ยน Apps Script ──────────────────
-const FIXED_URL='https://script.google.com/macros/s/AKfycbyz6edyYzO3yesZTufsoogrcVOM6l48K5NsnW-jiYyerf80TdHWh5Gjc5o2fTvMmMP0lg/exec';
+const FIXED_URL='https://script.google.com/macros/s/AKfycbxjEUYVw_EshXo9OFeZdRpPOss2AYCK88MBCWM9CYj-CVjB2qVWSup1UC34Zyy3QAgmkQ/exec';
 let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{}');
 cfg.url=FIXED_URL; // บังคับใช้ URL นี้เสมอ
 save();
@@ -1587,7 +1587,6 @@ function confirmCancelBooking(mode){
     if(autoItemId){
       const autoIt=items.find(x=>x.id===autoItemId);
       if(autoIt){
-        // หา booking ที่ booker และเวลาตรงกัน
         const autoBk=autoIt.bookings.find(b=>
           !b.cancelled&&b.booker===bk.booker&&b.from===bk.from&&b.autoLinked
         );
@@ -1597,6 +1596,19 @@ function confirmCancelBooking(mode){
         }
       }
     }
+  }
+  // ถ้ายกเลิก "อุปกรณ์" ที่พ่วงกับห้อง (linkedRoom) — เอาชื่อออกจาก itemNames ของห้องด้วย
+  if(cancelledItem?.type==='item'&&bk.linkedRoom){
+    items.filter(x=>x.type==='room').forEach(rm=>{
+      const roomBk=rm.bookings.find(rb=>
+        !rb.cancelled&&rb.booker===bk.booker&&rb.from===bk.from&&
+        rb.itemNames&&rb.itemNames.includes(cancelledItem.name)
+      );
+      if(roomBk){
+        roomBk.itemNames=roomBk.itemNames.filter(n=>n!==cancelledItem.name);
+        push({action:'updateItemNames',itemId:rm.id,bookingId:roomBk.id,itemNames:roomBk.itemNames});
+      }
+    });
   }
   save();render();renderBookings();closeM('mCancel');
   showToast('✅ ยกเลิกการจองแล้ว');
