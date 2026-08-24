@@ -899,6 +899,17 @@ function fmtDT(s){if(!s)return'—';try{const d=new Date(s);if(isNaN(d))return s
 function staffName(id){const s=staff.find(x=>x.id===id);return s?s.name:id;}
 function uid(){return'bk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);}
 
+// กำจัด booking ที่ id ซ้ำกัน (เก็บอันสุดท้ายไว้ เพราะน่าจะเป็นสถานะล่าสุด)
+function dedupeItems(rawItems){
+  rawItems.forEach(it=>{
+    if(!Array.isArray(it.bookings))return;
+    const seen=new Map();
+    it.bookings.forEach(b=>{ seen.set(b.id,b); }); // ตัวหลังทับตัวก่อน
+    it.bookings=[...seen.values()];
+  });
+  return rawItems;
+}
+
 // ── CONFLICT CHECK ────────────────────────────────────────────────────────
 // คืนค่า true ถ้าช่วงเวลาชนกัน
 function hasConflict(bookings,fromDT,toDT,itemType,itemDisabled){
@@ -1802,7 +1813,7 @@ async function syncNow(){
       fetch(cfg.url+'?action=getItems&t='+Date.now()).then(r=>r.json()),
       fetch(cfg.url+'?action=getLogs&t='+Date.now()).then(r=>r.json())
     ]);
-    if(Array.isArray(ir)&&ir.length>0) items=ir;
+    if(Array.isArray(ir)&&ir.length>0) items=dedupeItems(ir);
     if(Array.isArray(lr)) logs=lr;
     save();
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
@@ -2098,7 +2109,7 @@ window.addEventListener('load',()=>{
         fetch(cfg.url+'?action=getStaff&t='+Date.now()).then(r=>r.json())
       ]);
       if(Array.isArray(ir)&&ir.length>0){
-        items=ir; save();
+        items=dedupeItems(ir); save();
         const hasModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
         if(!hasModal) render();
         document.getElementById('syncLabel').textContent='เชื่อม Google Sheets';
