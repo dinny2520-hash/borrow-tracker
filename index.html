@@ -898,6 +898,8 @@ function nowTime(){return new Date().toTimeString().slice(0,5);}
 function fmtDT(s){if(!s)return'—';try{const d=new Date(s);if(isNaN(d))return s;return d.toLocaleString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return s;}}
 function staffName(id){const s=staff.find(x=>x.id===id);return s?s.name:id;}
 function uid(){return'bk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);}
+let lastLocalAction=0; // เวลาล่าสุดที่มีการแก้ไขข้อมูลในเครื่อง (กัน sync ทับข้อมูลเร็วเกินไป)
+function markLocalAction(){ lastLocalAction=Date.now(); }
 
 // กำจัด booking ที่ id ซ้ำกัน (เก็บอันสุดท้ายไว้ เพราะน่าจะเป็นสถานะล่าสุด)
 function dedupeItems(rawItems){
@@ -1826,11 +1828,13 @@ async function syncNow(){
   }
 }
 async function push(data){
+  markLocalAction(); // กัน sync ทับข้อมูลใหม่ที่เพิ่งแก้ไป
   if(!cfg.url)return;
   try{
     // ใช้ GET แทน POST เพื่อหลีกเลี่ยงปัญหา CORS ของ Google Apps Script
     const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify(data))+'&t='+Date.now();
     await fetch(url);
+    markLocalAction(); // อัปเดตเวลาอีกครั้งหลัง push เสร็จ ให้ sync รอเพิ่ม
   }catch(e){console.warn('push error',e);}
 }
 
@@ -2102,6 +2106,8 @@ window.addEventListener('load',()=>{
     if(!cfg.url){ console.warn('No URL configured'); return; }
     const hasOpenModal=[...document.querySelectorAll('.overlay')].some(el=>el.style.display==='flex');
     if(!force && hasOpenModal) return;
+    // ข้าม sync ถ้าเพิ่งมีการแก้ไขข้อมูลในเครื่องภายใน 8 วินาที (กันข้อมูลเก่าจาก Sheets มาทับ)
+    if(!force && Date.now()-lastLocalAction<8000) return;
     try{
       // ดึง items และ staff พร้อมกัน
       const [ir, sr] = await Promise.all([
