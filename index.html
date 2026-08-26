@@ -795,7 +795,7 @@ let items=JSON.parse(localStorage.getItem('bt_items')||'null')||DEFAULT_ITEMS;
 let logs=JSON.parse(localStorage.getItem('bt_logs')||'[]');
 let staff=JSON.parse(localStorage.getItem('bt_staff')||'null')||DEFAULT_STAFF;
 // ── URL ถาวร — แก้ตรงนี้ถ้าต้องการเปลี่ยน Apps Script ──────────────────
-const FIXED_URL='https://script.google.com/macros/s/AKfycbxjEUYVw_EshXo9OFeZdRpPOss2AYCK88MBCWM9CYj-CVjB2qVWSup1UC34Zyy3QAgmkQ/exec';
+const FIXED_URL='https://script.google.com/macros/s/AKfycbyiiR6sDwRvq-mHGmYP3lPgL2RmNaSOiHUa5LhSuIfOuStnmxWM4rJwsW99Uku77Ab-BA/exec';
 let cfg=JSON.parse(localStorage.getItem('bt_cfg')||'{}');
 cfg.url=FIXED_URL; // บังคับใช้ URL นี้เสมอ
 save();
@@ -901,13 +901,26 @@ function uid(){return'bk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 let lastLocalAction=0; // เวลาล่าสุดที่มีการแก้ไขข้อมูลในเครื่อง (กัน sync ทับข้อมูลเร็วเกินไป)
 function markLocalAction(){ lastLocalAction=Date.now(); }
 
-// กำจัด booking ที่ id ซ้ำกัน (เก็บอันสุดท้ายไว้ เพราะน่าจะเป็นสถานะล่าสุด)
+// กำจัด booking ที่ id ซ้ำกัน — รวมข้อมูลจากทุกสำเนา แทนที่จะเลือกแค่อันเดียว
+// เพื่อไม่ให้สถานะสำคัญ (returned, pendingReturn) หายไปถ้าสำเนาใดสำเนาหนึ่งเก่ากว่า
 function dedupeItems(rawItems){
   rawItems.forEach(it=>{
     if(!Array.isArray(it.bookings))return;
-    const seen=new Map();
-    it.bookings.forEach(b=>{ seen.set(b.id,b); }); // ตัวหลังทับตัวก่อน
-    it.bookings=[...seen.values()];
+    const merged=new Map();
+    it.bookings.forEach(b=>{
+      const existing=merged.get(b.id);
+      if(!existing){ merged.set(b.id,{...b}); return; }
+      // รวมฟิลด์สำคัญ — ถ้าสำเนาไหนบอกว่า true ให้ถือว่า true (ไม่ให้สถานะสำคัญหายไป)
+      merged.set(b.id,{
+        ...existing,
+        ...b,
+        returned: existing.returned||b.returned||false,
+        cancelled: existing.cancelled||b.cancelled||false,
+        pendingReturn: (existing.pendingReturn||b.pendingReturn)&&!(existing.returned||b.returned),
+        pendingStaffId: b.pendingStaffId||existing.pendingStaffId||''
+      });
+    });
+    it.bookings=[...merged.values()];
   });
   return rawItems;
 }
