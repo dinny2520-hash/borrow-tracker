@@ -1450,7 +1450,7 @@ function checkDateConflicts(){
   document.getElementById('bkRoomConflict').textContent=roomConflicts.length?`❌ ห้องติดการจอง: ${roomConflicts.join(', ')}`:'';
 }
 
-function confirmBooking(){
+async function confirmBooking(){
   const name=document.getElementById('bkName').value.trim();
   const fd=document.getElementById('bkFD').value,ft=document.getElementById('bkFT').value;
   const td=document.getElementById('bkTD').value,tt=document.getElementById('bkTT').value;
@@ -1531,16 +1531,26 @@ function confirmBooking(){
   const targets=[...checkedItems,...checkedRooms].map(id=>items.find(x=>x.id===id)?.name).filter(Boolean);
   logs.push({ts:nowStr(),type:'booking',detail:`${name} จอง ${targets.join(', ')} ${fmtDT(fromDT)} – ${fmtDT(toDT)}${purpose?' ('+purpose+')':''}`,staff:''});
   save();render();closeM('mBook');
-  showToast('✅ จองสำเร็จ!');
-  // push to Sheets
+  showToast('⏳ กำลังบันทึกการจอง...');
+
+  // push to Sheets — รอผลจริงก่อนถึงจะถือว่าสำเร็จ
+  const pushPromises=[];
   allCheckedItems.forEach(id=>{
     const it=items.find(x=>x.id===id);
     const latestBk=it&&it.bookings[it.bookings.length-1];
-    if(latestBk) push({action:'addBooking',itemId:id,booking:Object.assign({},latestBk)});
+    if(latestBk) pushPromises.push(push({action:'addBooking',itemId:id,booking:Object.assign({},latestBk)}));
   });
   checkedRooms.forEach(id=>{
-    push({action:'addBooking',itemId:id,booking:Object.assign({},booking,{itemNames:itemNames})});
+    pushPromises.push(push({action:'addBooking',itemId:id,booking:Object.assign({},booking,{itemNames:itemNames})}));
   });
+
+  const results=await Promise.all(pushPromises);
+  const allOk=results.every(r=>r===true);
+  if(allOk){
+    showToast('✅ จองสำเร็จ! (บันทึกเรียบร้อย)');
+  }else{
+    alert('⚠️ การจองบันทึกในเครื่องนี้แล้ว แต่ส่งข้อมูลไป Google Sheets ไม่สำเร็จ\n\nเครื่องอื่นอาจยังไม่เห็นรายการนี้ กรุณากด 🔄 ซิงก์ อีกครั้ง หรือลองจองใหม่หากยังไม่เห็น');
+  }
 }
 
 // ── BOOK DETAIL ───────────────────────────────────────────────────────────
@@ -1840,15 +1850,28 @@ async function syncNow(){
     console.warn('syncNow error',e);
   }
 }
-async function push(data){
+async function push(data,retries){
   markLocalAction(); // กัน sync ทับข้อมูลใหม่ที่เพิ่งแก้ไป
-  if(!cfg.url)return;
+  if(!cfg.url)return false;
+  if(retries===undefined) retries=2; // ลองซ้ำได้สูงสุด 2 ครั้งถ้าล้มเหลว
+  const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify(data))+'&t='+Date.now();
   try{
-    // ใช้ GET แทน POST เพื่อหลีกเลี่ยงปัญหา CORS ของ Google Apps Script
-    const url=cfg.url+'?data='+encodeURIComponent(JSON.stringify(data))+'&t='+Date.now();
-    await fetch(url);
+    const res=await fetch(url);
+    const json=await res.json().catch(()=>null);
     markLocalAction(); // อัปเดตเวลาอีกครั้งหลัง push เสร็จ ให้ sync รอเพิ่ม
-  }catch(e){console.warn('push error',e);}
+    if(json&&json.error){
+      console.warn('push server error',json.error);
+      if(retries>0){ await new Promise(r=>setTimeout(r,1000)); return push(data,retries-1); }
+      return false;
+    }
+    if(json&&json.ok===true) return true;
+    // ไม่แน่ใจว่าสำเร็จ แต่ไม่มี error ชัดเจน — ถือว่าน่าจะสำเร็จ
+    return true;
+  }catch(e){
+    console.warn('push error',e);
+    if(retries>0){ await new Promise(r=>setTimeout(r,1000)); return push(data,retries-1); }
+    return false;
+  }
 }
 
 // ── COPY / MODAL ──────────────────────────────────────────────────────────
