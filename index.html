@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>ระบบจอง-ยืมอุปกรณ์</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f7f6f3;--white:#fff;--border:#e2dfd8;--border2:#ccc9c0;
@@ -2136,7 +2135,28 @@ function renderReport(){
 }
 
 // ── EXPORT EXCEL ──────────────────────────────────────────────────────────
-function exportReportExcel(){
+let _xlsxLoaded=false;
+function loadXlsxLib(){
+  return new Promise((resolve,reject)=>{
+    if(_xlsxLoaded||window.XLSX){ _xlsxLoaded=true; resolve(); return; }
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>{ _xlsxLoaded=true; resolve(); };
+    s.onerror=()=>reject(new Error('โหลดไลบรารี Excel ไม่สำเร็จ'));
+    document.head.appendChild(s);
+  });
+}
+async function exportReportExcel(){
+  try{
+    showToast('⏳ กำลังเตรียมไฟล์...');
+    await loadXlsxLib();
+  }catch(e){
+    alert('ไม่สามารถโหลดไลบรารี Excel ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+    return;
+  }
+  _exportReportExcelReal();
+}
+function _exportReportExcelReal(){
   const sel=document.getElementById('reportMonth');
   if(!sel)return;
   const [y,mo]=sel.value.split('-').map(Number);
